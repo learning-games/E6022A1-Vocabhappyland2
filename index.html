@@ -1022,11 +1022,33 @@ function buildPool(dir, count=50, ext=IMG_EXT){
   }
   return m;
 }
+
+function buildPoolSplit({
+  dirA, fromA, toA,
+  dirB, fromB, toB,
+  ext = IMG_EXT
+}){
+  const m = new Map();
+  for(let i=fromA;i<=toA;i++){
+    const key = 'word'+i;
+    m.set(key, `${dirA}/${key}${ext}`);
+  }
+  for(let i=fromB;i<=toB;i++){
+    const key = 'word'+i;
+    m.set(key, `${dirB}/${key}${ext}`);
+  }
+  return m;
+}
+
 const LEVEL_POOLS = {
   1: buildPool('data1', 15),
   2: buildPool('data2', 37),
-  3: buildPool('data3', 36),  // ถ้าด่าน 3 ก็เก็บไว้ที่ data2 เหมือนเดิม ให้เปลี่ยนเป็น 'data2'
+  3: buildPoolSplit({
+    dirA:'data3', fromA:1,  toA:17,
+    dirB:'data4', fromB:18, toB:36
+  })
 };
+
 
 // === Image preloader (โหลดครั้งเดียว เก็บแคช กันโหลดซ้ำ) ===
 const __imgUrlCache  = new Set();          // จำว่า URL ไหน “เคยโหลด” แล้ว
