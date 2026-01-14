@@ -1,0 +1,2647 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>เกม-คำศัพท์ vocab happy land 2 ป.4-6</title>
+<style>
+
+/* ===== ฟอนต์รวมหน้า ===== */
+@font-face{
+  font-family: 'MyGameFont';
+  src: url('image/THSarabunNew.woff2') format('woff2'),
+       url('image/THSarabunNew.woff') format('woff'),
+       url('image/THSarabunNew.ttf') format('truetype');
+  font-weight: 400; font-style: normal; font-display: swap;
+}
+@font-face{
+  font-family: 'MyGameFont';
+  src: url('image/THSarabunNewBold.woff2') format('woff2'),
+       url('image/THSarabunNewBold.woff') format('woff'),
+       url('image/THSarabunNewBold.ttf') format('truetype');
+  font-weight: 700; font-style: normal; font-display: swap;
+}
+html, body, button, input, select, textarea, .pill, .btn, .btn-mini,
+.levelBtn, #startTitle, #countdown, .label, #timer {
+  font-family: 'MyGameFont', system-ui, -apple-system, 'Segoe UI', Arial, sans-serif;
+}
+
+:root{
+  --glass: rgba(0,0,0,.45);
+  --ok: #10b981;
+  --bad: #ef4444;
+  --hud-top: 15px;                 
+  --safe-top: env(safe-area-inset-top, 0px);
+
+  /* ปรับความเร็วเอฟเฟกต์ fade ได้ที่นี่ */
+  --fade-ms: 600ms;   /* เช่น 400ms / 800ms */
+}
+
+
+*{ box-sizing:border-box }
+html,body{ height:100%; margin:0 }
+body{
+  background: url("image/background2.png") center center / cover no-repeat fixed !important;
+  overflow:hidden; color:#fff;
+}
+#game{ position:relative; width:100vw; height:100vh; overflow:hidden }
+
+/* ===== HUD ===== */
+.hud{
+  position:fixed;
+  inset: calc(var(--safe-top) + var(--hud-top)) 5px auto 38px !important;
+  display:flex;
+  align-items:center;
+  gap:12px;
+  justify-content:space-between;
+  pointer-events:none;
+  z-index:40000;
+}
+
+/* === ซ่อน/แสดง HUD และนาฬิกา === */
+/* ซ่อน HUD ถ้าไม่ได้อยู่ในเกม และไม่ได้อยู่หน้า prestart */
+body:not(.in-game):not(.prestart) .hud {
+  display: none !important;
+}
+/* นาฬิกา โผล่เฉพาะตอน in-game เท่านั้น */
+body:not(.in-game) #clock {
+  display: none !important;
+}
+
+
+
+/* ===== Game Clock (Top Center, uses existing timer) ===== */
+#clock.clock-pill{
+  position:fixed;
+  top:14px;
+  left:50%;
+  transform:translateX(-50%);
+  z-index:16000;
+  pointer-events:none;
+
+  /* ปรับขนาดได้ */
+  --clock-size: 40px;
+  font-size: var(--clock-size);
+
+  background: var(--glass);
+  backdrop-filter: blur(6px);
+  color:#fff;
+  font-weight:1000;
+  line-height:1;
+  border-radius:999px;
+  padding:8px 16px;
+  box-shadow:0 4px 18px rgba(0,0,0,.25);
+  text-shadow:0 3px 10px rgba(0,0,0,.55);
+}
+@media (max-width:480px){
+  #clock.clock-pill{ --clock-size: 28px; padding:6px 12px; }
+}
+
+.pill{ background:var(--glass); backdrop-filter:blur(6px); padding:8px 12px; border-radius:999px; box-shadow:0 4px 18px rgba(0,0,0,.25) }
+#timer{ font-weight:700; font-variant-numeric:tabular-nums; letter-spacing:.5px; font-size:20px }
+.btn-mini{ pointer-events:auto; background:#1f2937; color:#fff; border:none; border-radius:12px; padding:8px 12px; font-weight:800; cursor:pointer; box-shadow:0 4px 18px rgba(0,0,0,.25) }
+.btn-mini:hover{ filter:brightness(1.1) }
+
+.score-label{ font-size:20px; font-weight:900; color:#fff; margin-bottom:6px; text-align:center; width:100%; margin-top:-4px; }
+
+/* กล่องคะแนนเป็นตัวเลข ปรับขนาดด้วย --score-size */
+.pill.gold{
+  --score-size: 42px;             /* << เปลี่ยนเลขนี้เพื่อปรับขนาด */
+  background: var(--glass);
+  border-radius: 12px;
+  padding: 6px 12px;
+  line-height: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: calc(var(--score-size) * 1.6);
+  box-shadow: 0 4px 18px rgba(0,0,0,.25);
+}
+.pill.gold .num{
+  font-size: var(--score-size);
+  font-weight: 1000;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: .5px;
+}
+
+@media (max-width:480px){ .pill.gold{ --gold-size:24px; --gold-cols:8; --gold-rows:2 } }
+
+/* ===== Welcome / Landing ===== */
+#landing{ position:fixed; inset:0; display:flex; flex-direction:column; gap:22px; align-items:center; justify-content:center; background:url("image/background2.png") center/cover no-repeat fixed !important; z-index:20000; transition:opacity .3s ease }
+#landing.hide{ opacity:0; pointer-events:none; visibility:hidden }
+#landing .brand{ width:min(92vw,1100px) }
+#landing .brand img{ width:100%; height:auto; display:block; filter:drop-shadow(0 10px 30px rgba(0,0,0,.6)) }
+#welcome{ position:fixed; inset:0; background:url("image/welcome.png") center/cover no-repeat fixed; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:24px; z-index:25000; transition:opacity .3s ease; }
+#welcome.hide{ opacity:0; pointer-events:none; visibility:hidden }
+#welcome #enterBtn{ padding:12px 28px; font-size:clamp(22px,4vw,36px); font-weight:1000; letter-spacing:.2px; border:0; border-radius:16px; color:#fff; background:rgba(0,0,0,.55); box-shadow:0 10px 28px rgba(0,0,0,.35); cursor:pointer; backdrop-filter:blur(6px); border:1px solid rgba(255,255,255,.18) }
+
+#welcome .brand{ width:min(90vw,1000px); 
+        margin-bottom:100px; 
+        display:flex; 
+        justify-content:center 
+}
+
+#welcome .brand 
+        img{ width:130%; 
+        height:auto; display:block; 
+        animation:pulse 3s infinite ease-in-out; 
+        filter:drop-shadow(0 6px 18px rgba(0,0,0,.45)) 
+}
+
+#welcome .welcome-content{ 
+       display:flex; 
+       flex-direction:column; 
+       align-items:center; gap:0; 
+       margin-top:100px 
+}
+@keyframes pulse{ 0%,100%{transform:scale(1);opacity:1} 50%{transform:scale(1.04);opacity:.9} }
+.level-menu{ display:flex; flex-direction:column; gap:14px; width:min(92vw,640px) }
+.levelBtn{ width:100%; padding:10px 16px; font-size:clamp(20px,4vw,34px); font-weight:1000; letter-spacing:.2px; border:0; border-radius:14px; color:#fff; background:rgba(0,0,0,.55); box-shadow:0 10px 28px rgba(0,0,0,.35); cursor:pointer; text-align:center; border:1px solid rgba(255,255,255,.18); backdrop-filter:blur(6px) }
+
+#startScreen{
+  position:fixed;
+  inset:0;
+  display:none;
+  flex-direction:column;
+  align-items:center;
+  justify-content:center;
+  background:rgba(0,0,0,.9);
+  z-index:30000;       
+  text-align:center;
+  padding:24px;
+}
+
+#startTitle{ font-size:clamp(26px,5vw,48px); font-weight:900; margin-bottom:10px }
+#startBtn{ margin-top:12px; padding:10px 18px; border:0; border-radius:12px; font-weight:800; cursor:pointer; background:#1f2937; color:#fff }
+#countdown{ display:none; font-size:clamp(56px,12vw,120px); font-weight:1000; line-height:1; margin-top:8px }
+
+/* ===== ภาพประกอบคำถาม (จัดกลางทั้งแนวตั้ง-แนวนอน) ===== */
+#qImg{
+  position:absolute;
+  top: 50%;
+  left: 50%;
+  max-width: min(60vw, 720px);
+  max-height: min(48vh, 480px);
+  width:auto; height:auto;
+  display:none;
+  z-index:9;
+  filter: drop-shadow(0 10px 30px rgba(0,0,0,.45));
+  border-radius: 12px;
+
+  /* จัดกลางแท้ ๆ แล้วค่อยเติม FX */
+  transform: translate(-50%, -50%)
+             translate(var(--fxX, 0), var(--fxY, 0))
+             scale(var(--fxS, 1));
+
+  transition:
+    transform 520ms cubic-bezier(.2,.9,.2,1),
+    opacity 520ms;
+}
+
+
+/* ===== กล่องคำถาม (เวอร์ชันใช้ตัวแปร FX) ===== */
+#questionBox{
+  position: fixed;             /* เดิมเป็น absolute → fixed เพื่ออิง viewport ตลอด */
+  top: var(--qTop);            /* ใช้ตัวแปรกำหนดระยะจากขอบบน */
+  left: 50%;
+  transform: translate(-50%, 0)
+             translate(var(--fxX, 0), var(--fxY, 0))
+             scale(var(--fxS, 1));
+  background:none; border:none; padding:0;
+  font-size: clamp(var(--qFontMin), var(--qFontVW), var(--qFontMax)); 
+  font-weight:1000; color:#fff;
+  text-shadow:0 4px 12px rgba(0,0,0,.8);
+  z-index: 10;
+  white-space:pre; overflow:visible; text-align:center;
+  transition: transform 520ms cubic-bezier(.2,.9,.2,1), opacity 520ms;
+}
+
+#questionBox.pre-drop{
+  top: calc(var(--qTop) - 40px);
+  opacity: 0;
+}
+
+/* ===== ตัวเลือกแบบวงกลม 2 ปุ่ม ===== */
+.option.circle{
+  position:absolute;
+  width: var(--c-sz, clamp(120px, 18vw, 220px));
+  height: var(--c-sz, clamp(120px, 18vw, 220px));
+  border-radius:50%;
+  border:10px solid transparent;
+  background:
+    radial-gradient(35% 35% at 30% 30%, rgba(255,255,255,.18), rgba(255,255,255,0) 60%) padding-box,
+    var(--ring, linear-gradient(130deg,#999,#666)) border-box;
+  box-shadow:0 8px 28px rgba(0,0,0,.35);
+  display:grid; place-items:center;
+  cursor:pointer; user-select:none; z-index:12;
+  transition: top 800ms cubic-bezier(.2,.9,.2,1),
+             left 800ms cubic-bezier(.2,.9,.2,1);
+}
+
+.option.circle .label{ 
+       font-weight:1000; 
+       font-size:clamp(18px,2.2vw,32px); 
+       color:#fff; 
+       text-align:center; 
+       text-shadow:0 3px 10px rgba(0,0,0,.6); 
+       padding:0 10px; line-height:1.15 }
+
+/* ===== ปุ่มตัวเลือกใหม่ ===== */
+.option.circle.live {
+  background: rgba(0,0,0,.55);                  
+  border: 10px solid #d97706;                    
+  box-shadow: 0 6px 18px rgba(0,0,0,.35);       
+}
+
+.option.circle.non {
+  background: rgba(0,0,0,.55);                  
+  border: 10px solid #a855f7;                  
+  box-shadow: 0 6px 18px rgba(0,0,0,.35);      
+}
+
+/* ขนาดของวงกลม (ปรับได้ตรงนี้) */
+.option.circle {
+  --c-sz: clamp(140px, 20vw, 240px);        
+}
+
+/* ===== เอฟเฟกต์เข้าแบบ zoom-in-bounce ===== */
+.option.circle.in-anim {
+  animation: zoomInBounce 650ms cubic-bezier(.25,.8,.25,1) forwards;
+  transform: scale(0.3);      /* เริ่มเล็กและจาง */
+  opacity: 0;
+}
+
+@keyframes zoomInBounce {
+  0%   { transform: scale(0.3); opacity: 0; }
+  60%  { transform: scale(1.1); opacity: 1; }  
+  100% { transform: scale(1);   opacity: 1; }
+}
+
+/* ตัวหนังสือในปุ่ม (ปรับได้ตรงนี้) */
+.option.circle .label {
+  font-size: clamp(22px, 3vw, 40px);          /* ขนาดตัวอักษร */
+  font-weight: 900;                             /* ความหนา */
+  letter-spacing: .5px;                         /* ระยะห่างตัวอักษร */
+  color: #fff;                                  /* สีข้อความ */
+}
+
+.option.circle.glow{
+  filter: drop-shadow(0 0 10px rgba(250,204,21,.70)) drop-shadow(0 0 18px rgba(250,204,21,.55));
+}
+
+/* ===== แถบเวลา ===== */
+#timebarWrap{ position:fixed; left:0; right:0; bottom:0; height:12px; background:rgba(255,255,255,.12); z-index:16000; border-top:1px solid rgba(255,255,255,.2) }
+#timebar{ height:100%; width:0%; background:#10b981; transition:width .1s linear }
+
+/* ===== เอฟเฟกต์/Toast/ภาพผลลัพธ์ ===== */
+#flash{ position:fixed; inset:0; background:transparent; pointer-events:none; z-index:17000 }
+.flash-clear{ animation: flashC 2000ms ease-out }
+@keyframes flashC{ 0%{background:rgba(255,255,255,.55)} 100%{background:transparent} }
+
+.flash-in{ animation: flashIn .35s ease-out }
+@keyframes flashIn{
+  0%{ opacity:0; transform:translate(-50%,-50%) scale(1.04); box-shadow:0 0 0 0 rgba(255,255,255,0), 0 0 0 0 rgba(255,255,255,0) }
+  30%{ opacity:1; box-shadow:0 0 24px 6px rgba(255,255,255,.75), 0 0 64px 12px rgba(255,255,255,.55) }
+  100%{ opacity:1; transform:translate(-50%,-50%) scale(1); box-shadow:none }
+}
+.flash-in-cover{ animation: flashInCover .35s ease-out }
+@keyframes flashInCover{
+  0%{ opacity:0; box-shadow:0 0 0 0 rgba(255,255,255,0), 0 0 0 0 rgba(255,255,255,0) }
+  30%{ opacity:1; box-shadow:0 0 24px 6px rgba(255,255,255,.75), 0 0 64px 12px rgba(255,255,255,.55) }
+  100%{ opacity:1; box-shadow:none }
+}
+
+#roundToast{
+  position:fixed; left:50%; top:50%; transform:translate(-50%,-50%);
+  background:rgba(0,0,0,.78); border:1px solid rgba(255,255,255,.22);
+  padding:18px 26px; border-radius:16px; font-size:clamp(22px,3vw,34px); font-weight:900;
+  z-index:17500; display:none; text-align:center; white-space:nowrap; line-height:1.25;
+}
+#roundToast .q{ display:block }
+#roundToast .a{ display:block; margin-top:.15em; opacity:.95 }
+#roundToast .r{ display:block; margin-top:.35em; font-weight:1000 }
+#roundToast .r.ok{ color:var(--ok) }
+#roundToast .r.bad{ color:var(--bad) }
+
+#ansImg{
+  position:fixed; inset:0; width:100vw; height:100vh; object-fit:cover; object-position:center;
+  opacity:.95; filter: drop-shadow(0 20px 60px rgba(0,0,0,.50));
+  z-index:17499; display:none; pointer-events:none;
+}
+
+/* ===== กล้อง/แคนวาส AR ===== */
+#cameraMirror{ position:fixed; inset:0; width:100vw; height:100vh; object-fit:cover; transform: scaleX(-1); z-index:1; display:none; background:#000 }
+#camCanvas{ position:fixed; inset:0; width:100vw; height:100vh; z-index:2; pointer-events:none; display:none }
+#game{ z-index:3; position:relative }
+
+/* ปุ่ม Mute / Fullscreen (ดันมาอยู่หน้าสุด) */
+#muteBtn, #fsBtn{
+  position: fixed;
+  right: 12px;
+  width: 44px;
+  height: 44px;
+  border-radius: 999px;
+  background: rgba(0,0,0,.45);
+  border: 1px solid rgba(255,255,255,.3);
+  color: #fff;
+  font-size: 18px;
+  line-height: 1;
+  display: grid;
+  place-items: center;
+  cursor: pointer;
+  z-index: 50000; /* สูงกว่า HUD และทุก overlay ในเกม */
+}
+#muteBtn{ bottom:12px }
+#fsBtn{ bottom:62px }
+
+
+/* มุมภาพประดับ (มีไฟล์ก็บังไว้ได้) */
+body::after{ content:""; position:fixed; top:0; left:0; width:var(--corner-img-w, 220px); height:var(--corner-img-h, 220px); background:url("image/button1.png") no-repeat left top / contain; pointer-events:none; z-index:10000 }
+body::before{ content:""; position:fixed; top:0; right:0; width:var(--corner2-img-w, 200px); height:var(--corner2-img-h, 200px); background:url("image/button2.png") no-repeat right top / contain; pointer-events:none; z-index:10000 }
+
+/* ===== อีโมจิขนมลอยไปมุม ===== */
+.fly-emoji{
+  position:fixed;
+  left:50vw;             /* เริ่มกลางจอ */
+  top:50vh;
+  font-size:clamp(48px, 8vw, 96px); /* 👈 ใหญ่ขึ้น */
+  line-height:1;
+  pointer-events:none;
+  z-index:20000;
+  opacity:0;
+  transform:translate(0,0) scale(.9);
+  filter: drop-shadow(0 6px 18px rgba(0,0,0,.35));
+}
+
+/* ระยะเวลา/ทิศปรับได้ด้วยตัวแปร --emoji-ms, --dx, --dy */
+.fly-emoji.go{
+  animation: emojiFly var(--emoji-ms, 1200ms) cubic-bezier(.2,.8,.2,1) forwards;
+}
+
+@keyframes emojiFly{
+  0%   { opacity:0; transform:translate(0,0) scale(.9); }
+  10%  { opacity:1; }
+  100% { opacity:0; transform:translate(var(--dx, 0), var(--dy, -300px)) scale(1.1); }
+}
+/* ===== จบอีโมจิขนม ===== */
+
+
+/* ===== เอฟเฟกต์หมุน + จางหายของวงกลม ===== */
+.option.circle.flip-out {
+  animation: flipOut 600ms ease forwards;
+}
+
+@keyframes flipOut {
+  0%   { transform: rotateY(0deg) scale(1); opacity:1; }
+  50%  { transform: rotateY(180deg) scale(1.1); opacity:0.9; }
+  100% { transform: rotateY(360deg) scale(0.8); opacity:0; }
+}
+
+
+#timebarWrap{ display:none !important }
+
+/* จางหายเรียบ ๆ (ใช้ตัวแปร --fade-ms) */
+.option.circle.fade-out {
+  animation: fadeOut var(--fade-ms, 600ms) ease forwards;
+}
+
+@keyframes fadeOut {
+  0%   { opacity: 1; transform: scale(1); }
+  100% { opacity: 0; transform: scale(0.9); }
+}
+
+/* ===== ตัวเลือกรูปภาพซ้าย-ขวา (Vocab Happy Land) ===== */
+.option.img{
+  position:absolute;
+  display:grid; place-items:center;
+/* ▼▼▼ แก้ตรงนี้: ไม่เอากรอบ/พื้นหลัง/ขอบ/ระยะห่าง และไม่ต้อง transition left/top */
+  padding:0;
+  border-radius:0;
+  background: transparent;
+  border: 0;
+  box-shadow: none;
+  width:  var(--imgW, clamp(240px, 30vw, 420px));
+  height: var(--imgH, clamp(240px, 30vw, 420px));
+  cursor:pointer; user-select:none; z-index:12;
+/* เดิม:
+  transition: top 800ms cubic-bezier(.2,.9,.2,1),
+             left 800ms cubic-bezier(.2,.9,.2,1);
+*/
+  transition: none;
+}
+.option.img.in-anim{
+  animation: zoomInBounce 650ms cubic-bezier(.25,.8,.25,1) forwards;
+  transform: scale(0.3);
+  opacity: 0;
+}
+/* ใช้ตัวแปร --fade-ms เช่นกัน */
+.option.img.fade-out { animation: fadeOut var(--fade-ms, 600ms) ease forwards; }
+
+.option.img.flip-out { animation: flipOut 600ms ease forwards; }
+
+/* ก่อนหน้า */
+.option.img > img{
+  max-width:100%;
+  max-height:100%;
+  width:auto; height:auto;
+  object-fit:contain;
+  display:block;
+/* ▼▼▼ แก้ตรงนี้: ย้ายเงอมาที่รูปโดยตรง ให้เบาลง */
+  filter: drop-shadow(0 6px 18px rgba(0,0,0,.35));
+  border-radius:0;
+}
+/* โซนเว้นว่างกึ่งกลางจอ: เราใช้ JS เลือก x ซ้าย/ขวาให้ไม่ทับกลาง */
+
+/* === Tap target สำหรับกดยืนยันรอบ (emoji ขนม) === */
+.tap-target{
+  position:absolute;
+  font-size: var(--bonus-size, 162px);   /* ← ปรับขนาดได้ */
+  line-height: 1;
+  user-select:none;
+  cursor:pointer;
+  z-index: 20050;
+  filter: drop-shadow(0 8px 18px rgba(0,0,0,.35));
+  transition: transform 120ms ease;
+}
+.tap-target:active{ transform: scale(.92); }
+
+/* ===== เอฟเฟกต์เกิดและหายของอีโมจิ (ปรับให้เห็นเฟดเข้าเด่นขึ้น) ===== */
+.tap-target {
+  position:absolute;
+  font-size: var(--bonus-size, 162px);   /* ← ปรับขนาดได้ */
+  line-height: 1;
+  user-select:none;
+  cursor:pointer;
+  z-index: 20050;
+  filter: drop-shadow(0 8px 18px rgba(0,0,0,.35));
+  transition: transform 120ms ease;
+
+  /* ฟาดเข้า 520ms + หน่วงเอฟเฟกต์อื่น 120ms */
+  animation:
+    emojiFadeIn 520ms ease-out both,
+    glowPulse 1.8s ease-in-out infinite 120ms,
+    wiggle 1.4s ease-in-out infinite 120ms;
+  will-change: opacity;
+}
+
+.tap-target:active {
+  transform: scale(.92);
+}
+
+.tap-target.disappear {
+  animation: emojiFadeOut 400ms ease-in-out forwards !important;
+}
+
+/* เข้าแบบ fade-in (หน่วงครึ่งแรกไว้ที่ 0) */
+@keyframes emojiFadeIn {
+  0%   { opacity: 0; }
+  45%  { opacity: 0; }
+  100% { opacity: 1; }
+}
+
+/* ออกแบบ fade-out */
+@keyframes emojiFadeOut {
+  0%   { opacity: 1; }
+  100% { opacity: 0; }
+}
+
+/* --- Glow for emoji (style only; ไม่ยุ่ง animation เพื่อไม่ทับ fade) --- */
+.tap-target{
+  text-shadow:
+    0 0 10px rgba(255,255,255,.70),
+    0 0 22px rgba(255,210,120,.55),
+    0 0 36px rgba(255,140,0,.40);
+}
+
+
+/* ไม่ใส่ animation ที่ .glow เพื่อไม่ทับของตัวหลัก */
+.tap-target.glow{ /* optional: จะลบคลาสนี้ทิ้งเลยก็ได้ */
+  /* no animation here */
+}
+
+
+@keyframes wiggle {
+  0%, 100% {
+    transform: rotate(0deg);
+  }
+  15% {
+    transform: rotate(-6deg);
+  }
+  30% {
+    transform: rotate(6deg);
+  }
+  45% {
+    transform: rotate(-4deg);
+  }
+  60% {
+    transform: rotate(4deg);
+  }
+  75% {
+    transform: rotate(-2deg);
+  }
+  90% {
+    transform: rotate(2deg);
+  }
+}
+
+
+/* ตำแหน่งอิสระของข้อความ/รูป (ปรับค่าเลขได้ตามใจ) */
+:root{
+  --qTop: 8vh;    /* ขยับระยะห่างจากขอบบนของจอ ~8% สูงจอ */
+  --qLeft: 50%;
+  --qFontMin: 24px;
+  --qFontVW:  25vw;
+  --qFontMax: 100px;
+}
+
+@media (max-width:420px){
+  .option.circle { --c-sz: clamp(110px, 28vw, 180px); }
+}
+
+.option.circle {
+  overflow: visible;
+  contain: layout paint;
+}
+
+.fx{
+  --fxX: 0;
+  --fxY: 0;
+  --fxS: 1;
+  will-change: transform, opacity;
+  transition: transform 520ms cubic-bezier(.2,.9,.2,1), opacity 520ms;
+}
+/* เข้า: slide-in จากบน */
+.in-pre { opacity:0; --fxY: -40px; }
+.in-go  { opacity:1; --fxY: 0;     }
+/* ออก: ตามทิศที่เลือก */
+.out-left  { opacity:0; --fxX: -90px; }
+.out-right { opacity:0; --fxX:  90px; }
+
+/* === สีวงกลมด่าน 2 ให้เหมือนด่านแรก === */
+.option.circle.choiceA {
+  background: rgba(0,0,0,.55);
+  border: 10px solid #a855f7;   /* ม่วงเหมือน .non */
+  box-shadow: 0 6px 18px rgba(0,0,0,.35);
+}
+.option.circle.choiceB {
+  background: rgba(0,0,0,.55);
+  border: 10px solid #d97706;   /* ส้มเหมือน .live */
+  box-shadow: 0 6px 18px rgba(0,0,0,.35);
+}
+
+.hud {
+  position: initial !important;   /* ยกเลิก fixed ของกล่องรวม */
+  inset: auto !important;         /* ล้างค่า inset เดิม */
+}
+
+.hud .left,
+.hud .right {
+  position: fixed !important;
+  top: var(--hud-top) !important;   /* ใช้ตัวแปรขยับขึ้น/ลงได้ */
+  z-index: 40000 !important;  /* ให้แขนซ้าย/ขวาอยู่บนสุดเหมือนกัน */
+  pointer-events: none;
+}
+
+.hud .left { left: 20px !important; }
+.hud .right { right: 20px !important; }
+
+.hud .btn-mini {
+  pointer-events: auto;   /* ให้ปุ่มกดได้ตามปกติ */
+}
+
+/* ===== Result Panel (สรุปคะแนนสวย ๆ) ===== */
+.result-panel{
+  --panel-bg: rgba(20,20,20,.92);
+  --panel-br: 20px;
+  --panel-bd: 1px solid rgba(255,255,255,.12);
+  --shadow: 0 20px 60px rgba(0,0,0,.55);
+  background: var(--panel-bg);
+  border: var(--panel-bd);
+  padding: clamp(20px, 4vw, 32px);
+  border-radius: var(--panel-br);
+  width: min(92vw, 640px);
+  display: grid;
+  grid-template-rows: auto auto auto auto;
+  gap: clamp(12px, 2vw, 18px);
+  text-align: center;
+  box-shadow: var(--shadow);
+  backdrop-filter: blur(6px);
+}
+
+.result-title{
+  margin: 0;
+  font-weight: 1000;
+  font-size: clamp(28px, 4.5vw, 44px);
+  letter-spacing: .2px;
+  text-shadow: 0 4px 14px rgba(0,0,0,.35);
+}
+
+.badge{
+  font-size: clamp(56px, 10vw, 120px);
+  line-height: 1;
+  filter: drop-shadow(0 8px 24px rgba(0,0,0,.45));
+  margin-top: 6px;
+  margin-bottom: 4px;
+}
+
+.result-metrics{
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: clamp(10px, 2vw, 16px);
+  margin-top: 4px;
+}
+
+.metric{
+  background: rgba(255,255,255,.06);
+  border: 1px solid rgba(255,255,255,.12);
+  border-radius: 16px;
+  padding: clamp(10px, 2vw, 16px);
+  box-shadow: 0 8px 26px rgba(0,0,0,.25) inset, 0 8px 24px rgba(0,0,0,.25);
+}
+
+.metric .label{
+  font-size: clamp(14px, 2.2vw, 18px);
+  opacity: .9;
+  margin-bottom: 4px;
+}
+
+.metric .value{
+  font-size: clamp(28px, 5.5vw, 52px);
+  font-weight: 1000;
+  line-height: 1;
+  letter-spacing: .3px;
+}
+
+/* ปุ่มใหญ่ขึ้น + สีชัด */
+.result-actions{
+  display: flex;
+  gap: 12px;
+  justify-content: center;
+  flex-wrap: wrap;
+  margin-top: 6px;
+}
+
+.btn{
+  appearance: none;
+  border: none;
+  border-radius: 14px;
+  padding: clamp(10px, 2.2vw, 14px) clamp(16px, 3.5vw, 24px);
+  font-weight: 900;
+  font-size: clamp(16px, 2.8vw, 20px);
+  cursor: pointer;
+  box-shadow: 0 10px 28px rgba(0,0,0,.35);
+  transition: transform .08s ease, filter .15s ease, box-shadow .15s ease;
+}
+
+.btn:active{ transform: translateY(1px) scale(.99); }
+
+/* ปุ่มหลัก: เข้ม + ไล่เฉดเล็กน้อย */
+.btn.strong{
+  color: #fff;
+  background: linear-gradient(180deg, #3b82f6, #1d4ed8);
+  border: 1px solid rgba(255,255,255,.15);
+}
+.btn.strong:hover{ filter: brightness(1.08); }
+
+/* ปุ่มรอง: โปร่ง */
+.btn.ghost{
+  color: #fff;
+  background: rgba(255,255,255,.08);
+  border: 1px solid rgba(255,255,255,.18);
+}
+.btn.ghost:hover{ filter: brightness(1.1); }
+
+
+</style>
+</head>
+<body>
+
+<!-- ==== AR Mirror ==== -->
+<video id="cameraMirror" playsinline muted></video>
+<canvas id="camCanvas"></canvas>
+
+<div id="game" aria-label="สนามเกม">
+  <div id="questionBox" aria-live="polite"></div>
+  <img id="qImg" alt="ภาพประกอบคำถาม" />
+</div>
+
+<!-- ===== Welcome (หน้าสุด) ===== -->
+<div id="welcome" role="dialog" aria-modal="true">
+  <div class="welcome-content">
+    <div class="brand"><img src="image/banner2.png" alt="Banner"></div>
+    <button id="enterBtn">เข้าสู่เกม</button>
+  </div>
+</div>
+
+<!-- ===== Landing ===== -->
+<div id="landing" role="dialog" aria-modal="true" class="hide">
+  <div class="brand"><img src="image/banner2.png" alt="Banner"></div>
+<div class="level-menu">
+  <button class="levelBtn" data-level="2">Food</button>
+  <button class="levelBtn" data-level="1">Disease</button>
+  <button class="levelBtn" data-level="3">Placess</button>
+  <button class="levelBtn" id="guideBtn">How to play 📖</button>
+   </div>
+</div>
+
+<!-- ===== ภารกิจ / หน้าเริ่ม ===== -->
+<div id="startScreen">
+  <div id="startTitle">ภารกิจ : เลือกวงกลมคำตอบจำแนกสิ่งมีชีวิตให้ถูกต้อง</div>
+  <button id="startBtn">เริ่ม</button>
+  <div id="countdown">3</div>
+</div>
+
+<!-- ===== คู่มือ ===== -->
+<div id="guideScreen" style="display:none; position:fixed; inset:0; align-items:center; justify-content:center; background:url('image/background2.png') center/cover no-repeat; z-index:20001">
+  <div class="guide-wrap" style="width:min(95vw, 1200px); max-height:92vh; display:flex; flex-direction:column; gap:10px; align-items:center; justify-content:center">
+    <img src="image/guide.png" alt="คู่มือเกม" style="width:100%; height:auto; max-height:92vh; border-radius:14px; box-shadow:0 20px 60px rgba(0,0,0,.55); display:block">
+    <button id="guideBack" class="btn-mini">เมนูหลัก</button>
+  </div>
+</div>
+
+<!-- ===== HUD ===== -->
+<div class="hud">
+  <div class="left">
+    <div class="stack">
+      <div style="display:flex; gap:8px;">
+        <button id="quickRestart" class="btn-mini">หน้าหลัก</button>
+        <button id="pauseBtn" class="btn-mini">⏸ หยุด</button>
+        <button id="camBtn" class="btn-mini">📷: ปิด</button>
+      </div>
+    </div>
+  </div>
+  <div class="right">
+    <div class="stack" style="align-items:flex-end">
+      <div class="score-label">คะแนน</div>
+      <div id="goldWrap" class="pill gold" aria-live="polite" title="คะแนน"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ===== แถบเวลา ===== -->
+<div id="timebarWrap"><div id="timebar"></div></div>
+<div id="flash"></div>
+<div id="roundToast"></div>
+<img id="ansImg" src="" alt="answer background">
+
+<!-- ===== ป๊อปอัปจบด่าน ===== -->
+<div id="overlay" style="visibility:hidden; opacity:0; transition:.25s; position:fixed; inset:0; display:grid; place-items:center; background:rgba(0,0,0,.55); z-index:9999">
+  <div class="result-panel">
+    <div class="badge" id="scoreBadge" aria-hidden="true">🏆</div>
+    <h1 class="result-title" id="endTitle">หมดเวลา</h1>
+
+<div class="result-metrics">
+  <div class="metric">
+    <div class="label">คะแนน</div>
+    <div class="value"><b id="finalScore">0</b></div>
+  </div>
+</div>
+
+    <div class="result-actions">
+      <button class="btn strong" id="restartBtn">เริ่มใหม่</button>
+      <button class="btn ghost" id="selectLevelBtn">กลับสู่หน้าหลัก</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===== เสียง ===== -->
+<audio id="hitSound" preload="auto" src="image/audio1.mp3"></audio>
+<audio id="winSound" preload="auto" src="image/win2.mp3"></audio>
+<audio id="bgm" preload="auto" loop src="image/bgm3.mp3"></audio>
+<audio id="selectSound" preload="auto" src="image/select.mp3"></audio>
+<audio id="eatSound" preload="auto" src="image/eat.mp3"></audio>
+<audio id="voiceAudio" preload="auto"></audio>
+<audio id="wrongSound" preload="auto" src="image/wrong.mp3"></audio>
+
+<!-- ===== ปุ่ม Mute / Fullscreen ===== -->
+<button id="muteBtn" aria-pressed="false" title="Mute / Unmute">🔊</button>
+<button id="fsBtn" aria-pressed="false" title="เข้าสู่โหมดเต็มจอ">⛶</button>
+
+<!-- ===== ควบคุม Mute (BGM เท่านั้น) ===== -->
+<script>
+(function(){
+  const muteBtn = document.getElementById('muteBtn');
+  const bgm     = document.getElementById('bgm');   // 🎵 เพลงพื้นหลัง
+  if(!muteBtn || !bgm) return;
+
+  let bgmMuted = false;      // สถานะ mute เฉพาะ BGM
+
+  function applyBgmMute(m){
+    bgmMuted = !!m;
+    bgm.muted = bgmMuted;    // ✅ ปิด/เปิดแค่ bgm
+    muteBtn.setAttribute('aria-pressed', String(bgmMuted));
+    muteBtn.textContent = bgmMuted ? '🔇' : '🔊';
+  }
+
+  muteBtn.addEventListener('click', () => applyBgmMute(!bgmMuted));
+})();
+</script>
+
+
+<!-- ===== ควบคุม Fullscreen ===== -->
+<script>
+(function(){
+  const fsBtn = document.getElementById('fsBtn');
+  if (!fsBtn) return;
+  function fsEnabled(){ return document.fullscreenEnabled || document.webkitFullscreenEnabled || document.msFullscreenEnabled }
+  function isFull(){ return document.fullscreenElement || document.webkitFullscreenElement || document.msFullscreenElement }
+  function requestFS(){ const el=document.documentElement; (el.requestFullscreen||el.webkitRequestFullscreen||el.msRequestFullscreen)?.call(el) }
+  function exitFS(){ (document.exitFullscreen||document.webkitExitFullscreen||document.msExitFullscreen)?.call(document) }
+  function render(){ const on=!!isFull(); fsBtn.setAttribute('aria-pressed', String(on)); fsBtn.title = on ? 'ออกจากโหมดเต็มจอ' : 'เข้าสู่โหมดเต็มจอ'; fsBtn.textContent = on ? '🗗' : '⛶' }
+  if (!fsEnabled()){ fsBtn.style.display='none'; return }
+  fsBtn.addEventListener('click', () => { if(isFull()) exitFS(); else requestFS() });
+  document.addEventListener('fullscreenchange', render);
+  document.addEventListener('webkitfullscreenchange', render);
+  document.addEventListener('msfullscreenchange', render);
+  render();
+})();
+</script>
+
+<!-- ===== ระบบเกม (2 วงกลมเท่านั้น) ===== -->
+<script>
+(()=>{
+
+  /* ---------- DOM ---------- */
+  const game = document.getElementById('game');
+  const qBox = document.getElementById('questionBox');
+  const qImg = document.getElementById('qImg');
+  const timebar = document.getElementById('timebar');
+  const timebarWrap = document.getElementById('timebarWrap');
+  const flash = document.getElementById('flash');
+  const toast = document.getElementById('roundToast');
+  const goldWrap = document.getElementById('goldWrap');  // << ต้องประกาศก่อนใช้
+
+
+/* ===== Clock UI for existing game timer ===== */
+const clockEl = document.createElement('div');
+clockEl.id = 'clock';
+clockEl.className = 'clock-pill';
+clockEl.textContent = '02:00';               // ค่าเริ่มต้นตาม GAME_DURATION_MS
+document.body.appendChild(clockEl);
+
+let clockUIItv = null;        // interval สำหรับอัปเดตตัวเลข
+let clockState = 'idle';       // 'idle' | 'run' | 'pause' | 'end'
+
+function fmtClock(ms){
+  const total = Math.max(0, Math.ceil(ms/1000));
+  const m = String(Math.floor(total/60)).padStart(2,'0');
+  const s = String(total % 60).padStart(2,'0');
+  return m + ':' + s;
+}
+function renderClockFromGame(){
+  // ใช้ตัวแปรของ "ตัวจับเวลาเดิม": remainingMs, gameEndAt, ended
+  const ms = (clockState === 'run')
+    ? Math.max(0, (gameEndAt - performance.now()))
+    : remainingMs; // pause/idle ใช้ค่าที่พักไว้
+  clockEl.textContent = fmtClock(ms);
+}
+function startClockUI(){
+  clockState = 'run';
+  if (!clockUIItv) clockUIItv = setInterval(renderClockFromGame, 250);
+  renderClockFromGame();
+}
+function pauseClockUI(){
+  clockState = 'pause';
+  if (clockUIItv){ clearInterval(clockUIItv); clockUIItv = null; }
+  renderClockFromGame();
+}
+function resumeClockUI(){
+  clockState = 'run';
+  if (!clockUIItv) clockUIItv = setInterval(renderClockFromGame, 250);
+  renderClockFromGame();
+}
+function stopClockUI(){
+  clockState = 'end';
+  if (clockUIItv){ clearInterval(clockUIItv); clockUIItv = null; }
+  renderClockFromGame();
+}
+function resetClockUI(){
+  clockState = 'idle';
+  if (clockUIItv){ clearInterval(clockUIItv); clockUIItv = null; }
+  // เซ็ตตัวเลขตามค่าเริ่มต้นของ GAME_DURATION_MS
+  clockEl.textContent = fmtClock(GAME_DURATION_MS);
+}
+
+
+  const overlay = document.getElementById('overlay');
+  const finalScoreEl = document.getElementById('finalScore');
+  const finalRoundsEl = document.getElementById('finalRounds');
+  const restartBtn = document.getElementById('restartBtn');
+  const selectLevelBtn = document.getElementById('selectLevelBtn');
+
+    window.currentLevel = 1; // เริ่มที่ด่าน 1
+
+
+  // Welcome -> Landing
+  (function(){
+    const welcome = document.getElementById('welcome');
+    const enterBtn = document.getElementById('enterBtn');
+    const landing = document.getElementById('landing');
+
+ enterBtn.addEventListener('click', ()=>{ 
+    welcome.classList.add('hide'); 
+    landing.classList.remove('hide');
+    bgm?.play?.().catch(()=>{}); 
+ });
+  })();
+
+function renderGold(score){
+  const n = Number(score) || 0;
+  goldWrap.innerHTML = `<span class="num">${n}</span>`;
+  goldWrap.setAttribute('aria-label', `คะแนน ${n}`);
+}
+
+// ตัวอย่าง ปรับตอนโหลด
+if (window.innerWidth < 480 && goldWrap) {
+  goldWrap.style.setProperty('--score-size', '28px');
+}
+
+  // เสียง
+  const hitSound = document.getElementById('hitSound');
+  const winSound = document.getElementById('winSound');
+  const bgm = document.getElementById('bgm');
+  const selectSound = document.getElementById('selectSound');
+  const eatSound = document.getElementById('eatSound');
+  const voiceAudio = document.getElementById('voiceAudio'); // 🔊 เสียงอ่านคำถามต่อด่าน
+const wrongSound = document.getElementById('wrongSound'); // 🔊 เสียงตอบผิด
+
+
+  if (bgm) {
+    bgm.loop = true;
+    bgm.addEventListener('ended', () => {
+      try {
+        bgm.currentTime = 0;
+        bgm.play()?.catch(()=>{});
+      } catch (_) {}
+    });
+  }
+
+const VOL_BGM=0.15, VOL_SELECT=0.75, VOL_HIT=0.75, VOL_WIN=0.85, VOL_EAT=0.25, VOL_VOICE=1;
+const VOL_WRONG=0.75;  // เสียงตอบผิด
+
+
+function applyBackendVolume(){
+  if (bgm) bgm.volume = VOL_BGM;
+  if (selectSound) selectSound.volume = VOL_SELECT;
+  if (hitSound) hitSound.volume = VOL_HIT;
+  if (winSound) winSound.volume = VOL_WIN;
+  if (eatSound) eatSound.volume = VOL_EAT;
+  if (voiceAudio) voiceAudio.volume = VOL_VOICE;
+    if (wrongSound) wrongSound.volume = VOL_WRONG;
+
+
+}
+applyBackendVolume();
+
+// ไม่ผูก mute ของ SFX กับ BGM อีกต่อไป
+function playSfx(el, vol){
+  try{
+    const n = el?.cloneNode(true);
+    if(!n) return;
+    n.volume = (typeof vol === 'number')
+      ? Math.max(0, Math.min(1, vol))
+      : (el.volume ?? 1);
+    n.muted = false;           // ✅ SFX ไม่ mute ตาม bgm
+    n.play?.();
+  }catch(_){}
+}
+
+
+  // util
+  const rand=(min,max)=>Math.floor(Math.random()*(max-min+1))+min;
+  const pick=(arr)=>arr[rand(0,arr.length-1)];
+  const shuffle=(arr)=>{ const A=arr.slice(); for(let i=A.length-1;i>0;i--){ const j=(Math.random()*(i+1))|0; [A[i],A[j]]=[A[j],A[i]] } return A };
+
+/* ===== พูลรูปภาพต่อด่าน: data1, data2, data3 (word1..word50) ===== */
+const IMG_EXT = '.png';                           // ถ้ารูปเป็น .webp หรือ .jpg เปลี่ยนตรงนี้
+function buildPool(dir, count=50, ext=IMG_EXT){
+  const m = new Map();                            // key: 'word1' → path 'data1/word1.png'
+  for(let i=1;i<=count;i++){
+    const key = 'word'+i;
+    m.set(key, `${dir}/${key}${ext}`);
+  }
+  return m;
+}
+const LEVEL_POOLS = {
+  1: buildPool('data1', 15),
+  2: buildPool('data2', 37),
+  3: buildPool('data3', 36),  // ถ้าด่าน 3 ก็เก็บไว้ที่ data2 เหมือนเดิม ให้เปลี่ยนเป็น 'data2'
+};
+
+// === Image preloader (โหลดครั้งเดียว เก็บแคช กันโหลดซ้ำ) ===
+const __imgUrlCache  = new Set();          // จำว่า URL ไหน “เคยโหลด” แล้ว
+const __imgElemCache = new Map();          // url -> HTMLImageElement ที่พร้อมใช้ซ้ำ
+
+async function warmDecode(url){
+  // คืนภาพที่ decode แล้ว (ถ้ามี)
+  if (__imgElemCache.has(url)) {
+    const im = __imgElemCache.get(url);
+    if (im && im.complete && im.naturalWidth > 0) return im;
+  }
+  // ไม่มีก็สร้างใหม่ แล้ว decode
+  const im = new Image();
+  im.decoding = 'async';
+  im.loading  = 'eager';
+  im.src = url;
+  try { await im.decode(); } catch(_) {}
+  __imgUrlCache.add(url);
+  __imgElemCache.set(url, im);
+  return im;
+}
+
+/**
+ * พรีโหลดรูปแบบไม่บล็อก UI + decode ล่วงหน้า
+ */
+function preloadImages(urls = [], onProgress = ()=>{}, onDone = ()=>{}) {
+  let done = 0;
+  const total = urls.length;
+  if (!total) { onDone(); return; }
+
+  Promise.all(urls.map(async (u)=>{
+    if (!u) { done++; onProgress(done,total); return; }
+    if (__imgUrlCache.has(u)) { done++; onProgress(done,total); return; }
+    await warmDecode(u);       // โหลด + decode + เก็บ __imgElemCache
+    done++; onProgress(done,total);
+  })).then(onDone);
+}
+
+
+/** ดึง URL รูปของด่านจาก LEVEL_POOLS (data1/2/3) */
+function collectLevelImageUrls(level) {
+  const pool = LEVEL_POOLS[level] || new Map();
+  return [...pool.values()].filter(Boolean);
+}
+
+// === เริ่มพรีโหลดรูปครบทุกด่าน + เก็บสถานะความคืบหน้าให้ UI ใช้ ===
+let __preloadDone = 0;
+let __preloadTotal = 0;
+let IMAGES_READY = false;
+
+function __collectAllUrls(){
+  return [
+    ...collectLevelImageUrls(1),
+    ...collectLevelImageUrls(2),
+    ...collectLevelImageUrls(3),
+  ].filter(Boolean);
+}
+
+function __renderPreloadProgress(){
+  const el = document.getElementById('startTitle');
+  if (!el) return;
+  el.textContent = IMAGES_READY
+    ? 'ภารกิจ : เลือกรูปภาพให้ตรงกับคำศัพท์'
+    : `กำลังเตรียมข้อมูล ${__preloadDone}/${__preloadTotal} ...`;
+}
+
+/** พรีโหลด “ทั้งเกม” ครั้งแรก (หรือเรียกซ้ำได้ จะโหลดเฉพาะที่ยังไม่เคย) */
+function bootPreloadAll(){
+  try{
+    const ALL_URLS = __collectAllUrls().filter(u => !__imgUrlCache.has(u));
+    __preloadDone  = __imgUrlCache.size;
+    __preloadTotal = __imgUrlCache.size + ALL_URLS.length;
+
+    if (!ALL_URLS.length){
+      IMAGES_READY = true;
+      __renderPreloadProgress();
+      return;
+    }
+
+    preloadImages(
+      ALL_URLS,
+      (done,total)=>{
+        __preloadDone = __imgUrlCache.size;  // นับจาก cache จริง
+        __preloadTotal = __imgUrlCache.size + (total - done);
+        __renderPreloadProgress();
+      },
+      ()=>{
+        IMAGES_READY = true;
+        __renderPreloadProgress();
+      }
+    );
+    __renderPreloadProgress();
+  }catch(e){
+    IMAGES_READY = true;
+  }
+}
+
+/** เรียกเติมพรีโหลดเฉพาะ “ด่าน” ปัจจุบัน (ใช้ตอนกดเปลี่ยนด่าน/เริ่มใหม่) */
+function ensurePreloadForLevel(level){
+  const urls = collectLevelImageUrls(level).filter(u=>!__imgUrlCache.has(u));
+  if (!urls.length) return;
+  // ไม่ต้องยุ่งกับ IMAGES_READY หลัก แค่เติมเข้า cache เฉย ๆ
+  preloadImages(urls, ()=>{}, ()=>{ /* เติมแคชเงียบ ๆ */ });
+}
+
+// ให้เริ่มหลัง DOM พร้อม (กันกรณี element ยังไม่อยู่)
+document.addEventListener('DOMContentLoaded', bootPreloadAll);
+
+
+
+/* ===== เสียงอ่านคำถามต่อด่าน ===== */
+
+// ดึงเลข N จาก key 'wordN' หรือจากพาธรูป .../wordN.png
+function extractWordNumber(qObj){
+  // 1) ถ้ามี imgKey/word/key
+  const key = qObj?.imgKey || qObj?.key || qObj?.word || null;
+  let m = key ? String(key).match(/word(\d+)/i) : null;
+  if (m) return parseInt(m[1],10);
+
+  // 2) ลองเดาจาก path รูป
+  if (qObj?.img){
+    m = String(qObj.img).match(/\/word(\d+)\.[a-z0-9]+$/i);
+    if (m) return parseInt(m[1],10);
+  }
+
+  // 3) ไม่เจออะไร → เดาสุ่ม 1..50
+  return (1 + ((Math.random()*50)|0));
+}
+
+// คำนวณพาธไฟล์และเล่นเสียง: level=1 ใช้ voice1..50 ใน sound1/
+// level=2 → voice51..100 ใน sound2/, level=3 → voice101..150 ใน sound3/
+function computeVoicePath(level, wordNum){
+  // ปกติ wordNum จะ 1..50
+  const n = Math.max(1, Math.min(50, Number(wordNum)||1));
+  let base = 1;   // level 1 เริ่ม 1
+  let folder = 'sound1';
+
+  if (level === 2){ base = 51; folder = 'sound2'; }
+  else if (level === 3){ base = 101; folder = 'sound3'; }
+
+  // voice index จริง = base + (n-1)
+  const vIndex = base + (n-1);
+  // ไฟล์ตั้งชื่อตามที่ให้ไว้: voiceXX (ไม่มีนามสกุลระบุไว้ → แนะนำใช้ .mp3)
+  return `${folder}/voice${vIndex}.mp3`;
+}
+
+// เลือกเสียงตามลำดับด่าน (voiceRel), เลขเต็ม (voiceAbs), หรือ fallback จาก wordN
+function pickVoiceSrc(level, qObj){
+  // 1) voiceAbs: ระบุเลขไฟล์เต็ม (1..150)
+  if (Number.isFinite(qObj?.voiceAbs)) {
+    const abs = Math.max(1, Math.min(150, qObj.voiceAbs|0));
+    let folder = 'sound1';
+    if (abs >= 101) folder = 'sound3';
+    else if (abs >= 51) folder = 'sound2';
+    return `${folder}/voice${abs}.mp3`;
+  }
+
+  // 2) voiceRel: ระบุเลข 1..50 ของ "ด่านนั้น"
+  if (Number.isFinite(qObj?.voiceRel)) {
+    const rel = Math.max(1, Math.min(50, qObj.voiceRel|0));
+    let idx = rel;       // L1 base
+    let folder = 'sound1';
+    if (level === 2){ idx = 50 + rel; folder='sound2'; }   // 51..100
+    else if (level === 3){ idx = 100 + rel; folder='sound3'; } // 101..150
+    return `${folder}/voice${idx}.mp3`;
+  }
+
+  // 3) fallback: อิงจาก wordN ของภาพคำถาม
+  const n = extractWordNumber(qObj);        // 1..50
+  return computeVoicePath(level, n);        // map ไปโฟลเดอร์ตามด่าน
+}
+
+function playQuestionVoiceSmart(level, qObj){
+  if (!voiceAudio) return;
+  try{
+    const src = pickVoiceSrc(level, qObj);
+    voiceAudio.pause();
+    voiceAudio.currentTime = 0;
+    voiceAudio.src = src;
+        voiceAudio.muted = false;   
+        voiceAudio.play()?.catch(()=>{});
+  }catch(_){}
+}
+
+
+/* เลือก key ที่ “ไม่ซ้ำกับคำตอบที่ถูก” */
+function pickWrongKey(level, correctKey){
+  const pool = LEVEL_POOLS[level] || new Map();
+  const keys = [...pool.keys()].filter(k => k !== correctKey);
+  if (!keys.length) return correctKey;
+  return keys[(Math.random()*keys.length)|0];
+}
+
+/* ===== สร้างตัวเลือกรูปภาพซ้าย-ขวา (เอฟเฟกต์เข้า/ออกเหมือนเดิม) =====
+   qObj = { imgKey: 'word17', ... }
+*/
+function spawnTwoImageOptions(qObj, level){
+  const pool = LEVEL_POOLS[level] || new Map();
+  const correctKey = qObj?.imgKey || qObj?.key || qObj?.word || null;
+
+  // เดา key จาก qObj.img ถ้าผู้สร้างข้อส่งมาเป็น path เช่น .../word34.png
+  let derivedKey = null;
+  if (!correctKey && qObj?.img){
+    const m = String(qObj.img).match(/\/(word\d+)\.[a-z0-9]+$/i);
+    if (m) derivedKey = m[1];
+  }
+  const finalCorrectKey = correctKey || derivedKey || ('word'+(1+((Math.random()*50)|0)));
+
+  const correctSrc = pool.get(finalCorrectKey) || '';
+  const wrongKey   = pickWrongKey(level, finalCorrectKey);
+  const wrongSrc   = pool.get(wrongKey) || '';
+
+  // สุ่มว่ารูปถูกอยู่ซ้ายหรือขวา
+  const order = Math.random()<0.5 ? ['left','right'] : ['right','left'];
+  const defs = [
+    { ok:true,  side:order[0], src:correctSrc },
+    { ok:false, side:order[1], src:wrongSrc   },
+  ];
+
+  defs.forEach(def=>{
+    const el = document.createElement('div');
+    el.className = 'option img in-anim';
+    el.dataset.correct = String(!!def.ok);
+    el.dataset.side    = def.side;
+
+const im = document.createElement('img');
+im.alt = def.ok ? 'รูปที่ถูกต้อง' : 'รูปหลอก';
+
+// << ใช้แคชถ้ามี + รับประกัน decode แล้ว >>
+const url = def.src || '';
+const cached = __imgElemCache.get(url);
+if (cached && cached.complete && cached.naturalWidth > 0){
+  im.src = cached.src;
+} else {
+  // เผื่อยังไม่อยู่ cache (กรณีเพิ่งเปลี่ยนด่าน) — เติมแคชแบบเบา ๆ
+  warmDecode(url).then(img => { im.src = img.src; }).catch(()=>{ im.src = url; });
+}
+
+    el.appendChild(im);
+    game.appendChild(el);
+
+    // คำนวณโซนวาง: ซ้าย/ขวา โดยเว้นกึ่งกลางจอ
+    const SAFE_PAD = 12;
+
+// === วัดขนาดจริง แล้ววาง “จุดยึดคงที่” ออกด้านข้างมากขึ้น ===
+const prevTransform = el.style.transform;
+el.style.transform = 'none';
+const cs = getComputedStyle(el);
+const realW = parseFloat(cs.width)  || 240;
+const realH = parseFloat(cs.height) || 240;
+el.style.transform = prevTransform;
+
+// ขยับออกด้านข้าง: ซ้าย ~14% ขวา ~86% และวางต่ำลงนิด (~60%)
+// ปรับค่า 0.14 / 0.86 / 0.60 ได้ตามใจ
+const SAFE = 12;
+const anchor = (side)=>{
+  const cx = side === 'left' ? innerWidth * 0.14 : innerWidth * 0.86;
+  const cy = innerHeight * 0.60;
+
+  // คำนวณซ้าย/บนจากกึ่งกลาง + clamp กันชิดขอบ
+  let left = Math.round(cx - realW/2);
+  let top  = Math.round(cy - realH/2);
+
+  left = Math.max(SAFE, Math.min(innerWidth  - realW - SAFE, left));
+  top  = Math.max(SAFE, Math.min(innerHeight - realH - SAFE, top));
+
+  return { left, top };
+};
+const pos = anchor(def.side);
+el.style.left = pos.left + 'px';
+el.style.top  = pos.top  + 'px';
+
+
+    el.addEventListener('click', ()=> tryAnswer(el));
+
+  });
+
+  // อัปเดตภาพคำถามถ้าต้องการ (กรณีอยากโชว์ภาพคำถามเป็นรูป “คำศัพท์”)
+  // ถ้าไม่ต้องการ สามารถปล่อย qImg ว่างไว้ได้ตามเดิม
+}
+
+/* ===== แทนที่ระบบคะแนนลอย: ใช้อีโมจิขนมแทน ===== */
+function flyScoreAt(x, y, ok){
+  // ไม่ใช้แล้ว แต่คง signature เผื่อมีที่เรียก — ให้เปล่า ๆ
+  if (!ok) return;
+  launchEmojiToCorner('top-right'); // ทิศเริ่มต้น
+}
+
+function flyScoreForEl(el, ok){
+  // ตอบผิด = ไม่แสดงอะไร
+  if (!ok) return;
+  // ตอบถูก = ยิงอีโมจิไปมุมขวาบน (ปรับเป็น 'bottom-right' ฯลฯ ได้)
+  launchEmojiToCorner('top-right', 900);
+}
+/* ===== จบแทนที่ ===== */
+
+
+/* ===== Emoji reward (ขนม) ===== */
+const REWARD_EMOJIS = ['💰'];
+
+function pickEmoji(){
+  return REWARD_EMOJIS[(Math.random() * REWARD_EMOJIS.length) | 0];
+}
+
+/* direction: 'top-right' | 'top-left' | 'bottom-right' | 'bottom-left'
+   หรือจะส่งเป็นพิกัด {x, y} เองก็ได้ */
+function getTargetDelta(direction='top-right'){
+  const margin = 24;
+  const cx = innerWidth / 2;
+  const cy = innerHeight / 2;
+
+  let tx = innerWidth - margin;
+  let ty = margin;
+
+  if (typeof direction === 'object' && direction && Number.isFinite(direction.x) && Number.isFinite(direction.y)){
+    tx = direction.x; ty = direction.y;
+  } else {
+    switch (direction){
+      case 'top-left':     tx = margin;            ty = margin;            break;
+      case 'bottom-right': tx = innerWidth-margin; ty = innerHeight-margin;break;
+      case 'bottom-left':  tx = margin;            ty = innerHeight-margin;break;
+      case 'top-right':
+      default:             tx = innerWidth-margin; ty = margin;            break;
+    }
+  }
+  return { dx: tx - cx, dy: ty - cy };
+}
+
+function launchEmojiToCorner(direction='top-right', durationMs=900){
+  const el = document.createElement('div');
+  el.className = 'fly-emoji';
+  el.textContent = pickEmoji();
+
+  const {dx, dy} = getTargetDelta(direction);
+  el.style.setProperty('--dx', dx + 'px');
+  el.style.setProperty('--dy', dy + 'px');
+  el.style.setProperty('--emoji-ms', durationMs + 'ms');
+
+  document.body.appendChild(el);
+  // trigger animation in next frame
+  requestAnimationFrame(()=> el.classList.add('go'));
+  el.addEventListener('animationend', ()=> el.remove(), {once:true});
+}
+/* ===== end Emoji reward ===== */
+
+
+/* === [เพิ่มใหม่] ตัวจับเวลาเกมแบบทั้งด่าน 2 นาที ไม่แสดงผล === */
+const GAME_DURATION_MS = 120000; // 2 นาที
+let gameTimerId = null;
+let gameEndAt = 0;
+let remainingMs = GAME_DURATION_MS;
+
+function clearGameTimer(){
+  if (gameTimerId){ clearTimeout(gameTimerId); gameTimerId = null; }
+}
+
+function scheduleGameTimer(ms){
+  clearGameTimer();
+  gameTimerId = setTimeout(()=>{
+    // ครบเวลา → จบด่านทันที (สรุปคะแนน)
+    if(!ended){ endLevel(); }
+  }, Math.max(0, ms|0));
+}
+
+function startGameTimer(){
+  remainingMs = GAME_DURATION_MS;
+  gameEndAt = performance.now() + remainingMs;
+  scheduleGameTimer(remainingMs);
+startClockUI();     // เริ่มโชว์นาฬิกานับถอยหลังจากตัวจับเวลาเดิม
+}
+
+function pauseGameTimer(){
+  if (gameTimerId){
+    remainingMs = Math.max(0, gameEndAt - performance.now());
+    clearGameTimer();
+       pauseClockUI();     // พักการอัปเดตตัวเลข (ใช้ remainingMs ค้างไว้)
+  }
+}
+
+function resumeGameTimer(){
+  if (remainingMs > 0 && !ended){
+    gameEndAt = performance.now() + remainingMs;
+    scheduleGameTimer(remainingMs);
+        resumeClockUI();    // เดินนาฬิกาต่อ
+  }
+}
+
+  const BLANK_MS=800, Q_DROP_MS=600, Q_HOLD_MS=400, OPT_IN_MS=200, RESULT_MS=1000;
+  let running=false, ended=false, paused=false;
+  window.ended = ended; // ✅ sync ค่าเริ่มต้นไปยัง global
+  let score=0, round=0;
+  let roundTimer=null, timeLeft=0, awaitingAnswer=false;
+
+// === โหมดรอผู้เล่นกดยืนยัน (Tap-to-continue) ===
+let gateOpen = false;
+let afterRoundTimeoutId = null;  // ⬅ เก็บ timeout ที่จะเรียก spawnContinueEmojis
+
+function cancelPostRoundPhase(){
+  gateOpen = false;
+  if (afterRoundTimeoutId){
+    clearTimeout(afterRoundTimeoutId);
+    afterRoundTimeoutId = null;
+  }
+  clearContinueEmojis();  // ลบอีโมจิที่ลอยอยู่
+}
+
+const BONUS_EMOJIS = ['🌈','💰','🪙','💵','📖','🎁','🎃','🧸','🏆','🎷','🎓','👑'];
+
+function spawnContinueEmojis(n=1){
+  // ออกจากเกมแล้ว หรือไม่ได้อยู่ in-game → ไม่สร้าง
+  if (ended || !document.body.classList.contains('in-game')) return;
+
+  clearContinueEmojis();
+  gateOpen = true;
+
+  const PADDING = 12;            // กันไม่ให้ชิดขอบจอเกินไป
+  const HOLE_W_PCT = 0.40;       // สัดส่วนความกว้างรูตรงกลาง (40% ของจอ)
+  const HOLE_H_PCT = 0.34;       // สัดส่วนความสูงรูตรงกลาง (34% ของจอ)
+  const triesMax   = 60;
+  const holeW = Math.floor(innerWidth  * HOLE_W_PCT);
+  const holeH = Math.floor(innerHeight * HOLE_H_PCT);
+  const holeX = Math.floor((innerWidth  - holeW)/2);
+  const holeY = Math.floor((innerHeight - holeH)/2);
+  const holeRect = { x: holeX, y: holeY, w: holeW, h: holeH };
+
+  // ฟังก์ชันช่วย: กล่อง A กับ B ซ้อนกันไหม
+  const rectsOverlap = (ax,ay,aw,ah, bx,by,bw,bh) =>
+    (ax < bx + bw) && (ax + aw > bx) && (ay < by + bh) && (ay + ah > by);
+
+  for (let i=0; i<n; i++){
+    const e = document.createElement('div');
+e.className = 'tap-target glow';
+    e.textContent = BONUS_EMOJIS[(Math.random()*BONUS_EMOJIS.length)|0];
+
+    // วางชั่วคราวเพื่อวัดขนาดจริง
+    e.style.left = '-9999px';
+    e.style.top  = '-9999px';
+    document.body.appendChild(e);
+
+    const r = e.getBoundingClientRect();
+    const w = r.width, h = r.height;
+
+    // กรอบสุ่มปลอดภัย (ลบขนาดอีโมจิออกแล้ว)
+    const minX = PADDING;
+    const maxX = Math.max(PADDING, innerWidth  - PADDING - w);
+    const minY = PADDING;
+    const maxY = Math.max(PADDING, innerHeight - PADDING - h);
+
+    // เผื่อกรณีจอเล็กมาก: ถ้ารูตรงกลางกินพื้นที่เกินไป → หดรูลงอัตโนมัติ
+    const holeTooWide  = (holeW >= (innerWidth  - PADDING*2 - w));
+    const holeTooTall  = (holeH >= (innerHeight - PADDING*2 - h));
+    const useHole = !(holeTooWide || holeTooTall);
+
+    let x=0, y=0, ok=false, tries=0;
+    while (tries++ < triesMax){
+      x = Math.round(minX + Math.random() * (maxX - minX));
+      y = Math.round(minY + Math.random() * (maxY - minY));
+
+      if (!useHole){
+        ok = true; // ถ้ารูใหญ่เกินจนแทบไม่มีที่วาง ให้ข้ามเงื่อนไขรู
+      }else{
+        ok = !rectsOverlap(x,y,w,h, holeRect.x, holeRect.y, holeRect.w, holeRect.h);
+      }
+      if (ok) break;
+    }
+
+    // ถ้ายังซ้อนรูหลังพยายามหลายครั้ง → “ดันออก” ไปชิดขอบรูฝั่งที่ใกล้สุด
+    if (!ok && useHole){
+      // ศูนย์กลางอิโมจิ
+      const cx = x + w/2, cy = y + h/2;
+      const hx1 = holeRect.x, hx2 = holeRect.x + holeRect.w;
+      const hy1 = holeRect.y, hy2 = holeRect.y + holeRect.h;
+
+      // หาระยะสั้นสุดไปยัง 4 ด้านของรู แล้วดันไปทิศนั้น
+      const dxL = Math.abs(cx - hx1);
+      const dxR = Math.abs(hx2 - cx);
+      const dyT = Math.abs(cy - hy1);
+      const dyB = Math.abs(hy2 - cy);
+
+      const minD = Math.min(dxL, dxR, dyT, dyB);
+      if (minD === dxL) x = hx1 - w - 1;        // ดันไปซ้ายของรู
+      else if (minD === dxR) x = hx2 + 1;       // ดันไปขวาของรู
+      else if (minD === dyT) y = hy1 - h - 1;   // ดันขึ้นเหนือรู
+      else                   y = hy2 + 1;       // ดันลงใต้รู
+
+      // สุดท้าย clamp กลับเข้ากรอบปลอดภัย
+      x = Math.max(minX, Math.min(maxX, x));
+      y = Math.max(minY, Math.min(maxY, y));
+    }
+
+    e.style.left = x + 'px';
+    e.style.top  = y + 'px';
+    e.addEventListener('click', () => {
+      playSfx(eatSound, VOL_EAT);
+    e.classList.add('disappear');
+      // รอแอนิเมชันหายเสร็จ (ต้องตรงกับ 320ms ใน CSS)
+      setTimeout(() => {
+        e.remove();
+        proceedNextRound();   
+      }, 320);
+    }, { once:true });
+  }
+}
+
+function clearContinueEmojis(){
+  document.querySelectorAll('.tap-target').forEach(n=> n.remove());
+}
+
+function proceedNextRound(){
+  if (!gateOpen) return;
+  gateOpen = false;
+
+  // ✅ หลักการใหม่: การไปคำถามชุดใหม่ = ได้ 1 คะแนน
+  score += 1;
+  updateHUD();
+
+  clearContinueEmojis();
+  nextRound();
+}
+
+  let driftTimers = [];
+  function clearDrifts(){ driftTimers.forEach(id=>clearInterval(id)); driftTimers=[]; }
+  function clearRoundObjects(){ 
+          clearDrifts(); document.querySelectorAll('.option').forEach(n=>n.remove()); 
+}
+
+function restorePlayfield(){
+  game.style.visibility = 'visible';
+  qBox.style.display    = 'block';
+}
+
+function freezePlayfield(on){
+  awaitingAnswer = false;           // ห้ามตอบต่อ
+  stopTimebar();                    // กันแถบเวลา (ถ้ามี)
+  clearRoundObjects();              // ลบวงกลม + เคลียร์ interval เคลื่อนที่
+  // ซ่อน/ล้างคำถามและรูป
+  qBox.textContent = '';
+  qBox.style.display = on ? 'none' : 'block';
+  if (qImg){
+    qImg.style.display = on ? 'none' : 'block';
+    if(on) qImg.removeAttribute('src');
+  }
+  game.style.visibility = on ? 'hidden' : 'visible';
+}
+
+  function updateHUD(){ renderGold(score); 
+}
+
+function resetState(){ 
+    clearCountdown();
+   cancelPostRoundPhase();   // กัน timeout ค้างจากรอบก่อน
+  running = false;
+  ended   = true;
+  window.ended = ended;
+  paused  = false;
+
+  clearRoundObjects();
+  clearGameTimer();
+  if (roundTimer){ clearInterval(roundTimer); roundTimer = null; }
+  document.body.classList.remove('in-game');
+  score = 0;
+  round = 0;
+  timeLeft = 0;
+  awaitingAnswer = false;
+  updateHUD();
+
+  qBox.textContent = '';
+  qBox.style.top = '-160px';
+  qBox.style.display = 'none';
+  if (qImg) {
+    qImg.style.display = 'none';
+    qImg.removeAttribute('src');
+  }
+
+  stopTimebar();
+  resetClockUI();
+  game.style.visibility = 'visible';   // เผื่อถูกซ่อนไว้ตอนจบเกม
+}
+
+// ✅ [เพิ่มใหม่] เคลียร์จอ+เสียงแบบทันที (กันปุ่มค้างข้ามด่าน)
+function hardCleanupNow({ stopBgm = true } = {}){
+  // 1) ตัดสถานะเกมทันที
+  awaitingAnswer = false;
+  gateOpen = false;
+  running = false;
+  paused = false;
+  ended = true;
+  window.ended = true;
+
+  // 2) เคลียร์ timer/interval/timeout ทุกตัวที่เกี่ยวกับรอบ
+  cancelPostRoundPhase();        // เคลียร์ afterRoundTimeoutId + ลบ tap-target
+  clearGameTimer();              // เคลียร์ setTimeout จบด่าน 2 นาที
+  if (roundTimer){ clearInterval(roundTimer); roundTimer = null; }
+  clearDrifts();                 // เคลียร์ setInterval ที่ทำให้ปุ่มลอย
+
+  // 3) ลบวัตถุที่สร้างแบบไดนามิกทั้งหมด (สำคัญสุด!)
+  document.querySelectorAll('.option, .tap-target, .fly-emoji').forEach(n=> n.remove());
+
+  // 4) เคลียร์ UI คำถาม/รูป และทำให้สนาม “สะอาด”
+  qBox.textContent = '';
+  qBox.style.display = 'none';
+  qBox.style.visibility = 'hidden';
+  qBox.classList.remove('in-pre','in-go','out-left','out-right','fx');
+
+  if (qImg){
+    qImg.onload = null;
+    qImg.onerror = null;
+    qImg.removeAttribute('src');
+    qImg.style.display = 'none';
+    qImg.classList.remove('in-pre','in-go','out-left','out-right','fx');
+  }
+
+  stopTimebar();
+  stopClockUI();
+  resetClockUI();
+
+  // 5) หยุดเสียงทุกตัวทันที (รวม voice ที่กำลังเล่น)
+  const audios = [voiceAudio, hitSound, winSound, selectSound, eatSound, wrongSound, bgm];
+  audios.forEach(a=>{
+    try{
+      if(!a) return;
+      a.pause();
+      a.currentTime = 0;
+    }catch(_){}
+  });
+
+  // ถ้าบอสไม่อยากให้ BGM ดับตอนกลับเมนู ให้ stopBgm=false ได้
+  if (!stopBgm && bgm){
+    try{ bgm.play().catch(()=>{}); }catch(_){}
+  }
+
+  // 6) ถอด class โหมดเล่นเกมออก
+  document.body.classList.remove('in-game');
+  document.body.classList.remove('prestart');
+
+  // 7) ทำให้สนามมองเห็น/ไม่ค้าง hidden (กันเคสจบด่านซ่อน game ไว้)
+  game.style.visibility = 'visible';
+}
+
+
+  function showToast(payload){
+    const ansImg = document.getElementById('ansImg');
+    const data = (typeof payload === 'object' && payload) ? payload : { q:String(payload||''), a:'', ok:false };
+    const { q='', a='', ok=false } = data;
+    const esc = (s)=> String(s||'').replace(/[&<>"']/g, m=>({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[m]));
+    toast.innerHTML = `<span class="q">${esc(q)}</span><span class="a">${esc(a||'—')}</span><span class="r ${ok?'ok':'bad'}">${ok?'ถูกต้อง':'ไม่ถูกต้อง'}</span>`;
+    toast.style.display='inline-block';
+    if(ansImg){ ansImg.onerror=()=>{ansImg.style.display='none'}; ansImg.src='image/ans1.png'; ansImg.style.display='block'; }
+    const playFlashIn = (el,cover=false)=>{ if(!el)return; el.classList.remove('flash-in','flash-in-cover'); void el.offsetWidth; el.classList.add(cover?'flash-in-cover':'flash-in'); el.addEventListener('animationend',()=>el.classList.remove('flash-in','flash-in-cover'),{once:true}); };
+    playFlashIn(ansImg,true); playFlashIn(toast,false);
+    setTimeout(()=>{ toast.style.display='none'; if(ansImg) ansImg.style.display='none'; }, RESULT_MS);
+  }
+
+// ตัดระบบแถบเวลา + ตัวจับเวลาออก
+function startTimebar(){}                 // no-op
+function stopTimebar(){}                  // no-op
+function updateTimebar(){}                // no-op
+
+function dropQuestion(text, imgSrc){
+  // ข้อความ
+  qBox.textContent = String(text);
+
+  // รีเซ็ตของค้างจากรอบก่อน
+  qBox.style.transition = '';
+  qImg.style.transition = '';
+  qBox.style.opacity = '';
+  qImg.style.opacity = '';
+  qBox.style.pointerEvents = 'auto';
+  qBox.style.top = 'var(--qTop)';
+  qBox.style.display = 'block';
+
+  // ซ่อนข้อความไว้จนกว่ารูปจะพร้อม
+  qBox.style.visibility = 'hidden';
+
+  // รีเซ็ตคลาส FX
+  qBox.classList.remove('out-left','out-right','in-go','in-pre');
+  qImg.classList.remove('out-left','out-right','in-go','in-pre');
+  qImg.classList.add('fx','in-pre');   // qBox ไม่มี fx/in-pre แล้ว
+
+  // รูปภาพ
+  if (qImg){
+    if (imgSrc){
+      qImg.style.display = 'none';
+
+      const startIn = () => {
+        qImg.style.display = 'block';
+        qBox.style.visibility = 'visible';  // ✅ โชว์ข้อความเมื่อรูปพร้อมแล้ว
+        requestAnimationFrame(() => {
+          // ใส่คลาสเข้าให้รูป (และจะใส่ให้ qBox ถ้าต้องการเอฟเฟกต์ข้อความด้วย)
+          qImg.classList.add('in-go');
+          // ถ้าอยากให้ข้อความนิ่ง ๆ ไม่ต้องใส่ in-go ให้ qBox
+          // qBox.classList.add('in-go');
+        });
+      };
+      const textOnly = () => {
+        qImg.style.display = 'none';
+        qBox.style.visibility = 'visible';   // ✅ รูปไม่มา แต่ปล่อยข้อความได้
+        // ถ้าอยากให้ข้อความนิ่ง ๆ ก็คงไว้แบบไม่มี in-go
+        // requestAnimationFrame(() => qBox.classList.add('in-go'));
+      };
+
+qImg.onload  = startIn;
+qImg.onerror = textOnly;
+
+// ใช้รูปจากแคชถ้ามี (ขึ้นทันที ไม่ต้องรอเครือข่าย/Decode ใหม่)
+const cached = __imgElemCache.get(imgSrc);
+if (cached && cached.complete && cached.naturalWidth > 0){
+  qImg.src = cached.src;
+  // บางบราวเซอร์ onload อาจไม่ยิงเมื่อใช้ src เดิม → เรียก startIn เอง
+  if (qImg.complete && qImg.naturalWidth > 0) startIn();
+} else {
+  // เติมแคชแบบ async แล้วค่อยตั้ง src
+  warmDecode(imgSrc).then(img=>{
+    qImg.src = img.src;
+    if (qImg.complete && qImg.naturalWidth > 0) startIn();
+  }).catch(()=>{
+    qImg.src = imgSrc;
+  });
+}
+
+      if (qImg.complete && qImg.naturalWidth > 0) startIn();
+} else {
+  // ไม่มีรูป → เล่นเอฟเฟกต์กับ qBox
+  qImg.style.display = 'none';
+  qImg.removeAttribute('src');
+
+  // รีเซ็ตแล้วใส่คลาส FX ให้ qBox
+  qBox.classList.remove('fx','in-pre','in-go','out-left','out-right');
+  qBox.classList.add('fx','in-pre');
+  qBox.style.visibility = 'visible';
+
+  requestAnimationFrame(() => {
+    qBox.classList.add('in-go');     // ✅ ทำให้รอบแรกเฟด/เลื่อนเข้าด้วย
+  });
+}
+
+  }
+}
+
+  /* ---------- ตัวเลือก 2 วงกลมด้านซ้าย/ขวา ---------- */
+  function clearOptionGlows(){ document.querySelectorAll('.option.circle.glow').forEach(n=>n.classList.remove('glow')); }
+  function glowGold(el){ if(!el) return; el.classList.add('glow'); }
+  function spawnTwoCircles(correctTag /* 'living'|'non' */){
+    const SIDE_W = innerWidth / 3;
+    const PAD = 16;
+    const order = Math.random()<0.5 ? ['left','right'] : ['right','left'];
+    const defs = [
+      { key:'non',    text:'สิ่งไม่มีชีวิต', cls:'non',  side:order[0] },
+      { key:'living', text:'สิ่งมีชีวิต',     cls:'live', side:order[1] },
+    ];
+    defs.forEach(def=>{
+      const el = document.createElement('div');
+            // เพิ่มคลาส in-anim เพื่อให้เล่นเอฟเฟกต์เข้า
+            el.className = `option circle ${def.cls} in-anim`;
+
+      el.dataset.correct = String(def.key === correctTag);
+      el.dataset.side = def.side; 
+      const label = document.createElement('div');
+      label.className = 'label';
+      label.textContent = def.text;
+      el.appendChild(label);
+      game.appendChild(el);
+
+// ===== วัดขนาดจริงแบบไม่โดน transform แล้วค่อยวาง =====
+const SAFE_PAD = 12; // ขอบปลอดภัยรอบจอ
+
+// ถอด transform ชั่วคราวเพื่อวัดขนาดจริง
+const prevTransform = el.style.transform;
+el.style.transform = 'none';
+
+const cs = getComputedStyle(el);
+const core = parseFloat(cs.getPropertyValue('--c-sz')) || parseFloat(cs.width) || 180;
+const border =
+  (parseFloat(cs.borderLeftWidth)  || 0) +
+  (parseFloat(cs.borderRightWidth) || 0);
+
+// ขนาดจริงเมื่อ scale(1)
+const realSize = Math.round(core + border);
+
+// คืน transform เดิม + ปล่อยให้ in-anim ทำงานต่อ
+el.style.transform = prevTransform;
+
+// โซนคงที่แนวตั้ง (กันหัวท้าย)
+const yMin = 110;
+const yMax = Math.max(140, innerHeight - realSize - SAFE_PAD);
+
+// โซนแนวนอนซ้าย/ขวาแบบ “ไม่เกิน 1/3 จอ” และไม่ให้ล้น
+const totalMaxX = innerWidth - realSize - SAFE_PAD;
+
+// เริ่ม-จบโซน 1/3 ซ้าย/ขวา
+const leftZoneStart  = SAFE_PAD;
+const leftZoneEnd    = Math.max(SAFE_PAD, Math.min(totalMaxX, (innerWidth / 3) - SAFE_PAD));
+
+const rightZoneStart = Math.max(SAFE_PAD, Math.min(totalMaxX, Math.ceil((innerWidth * 2) / 3)));
+const rightZoneEnd   = totalMaxX;
+
+// เลือกช่วงตามฝั่ง
+let xMin, xMax;
+if (def.side === 'left') {
+  xMin = leftZoneStart;
+  xMax = leftZoneEnd - realSize; // กันขอบจริง
+} else {
+  xMin = rightZoneStart;
+  xMax = rightZoneEnd;
+}
+
+// ถ้าจอแคบจนช่วงติดลบ → ใช้ช่วงทั้งจอ
+if (!isFinite(xMin) || !isFinite(xMax) || xMin > xMax) {
+  xMin = SAFE_PAD;
+  xMax = totalMaxX;
+}
+
+// ตั้งค่าตำแหน่งเริ่มต้นปลอดภัย
+const nx0 = Math.round(xMin + Math.random() * Math.max(0, xMax - xMin));
+const ny0 = Math.round(yMin + Math.random() * Math.max(0, yMax - yMin));
+el.style.left = nx0 + 'px';
+el.style.top  = ny0 + 'px';
+
+// ให้เคลื่อนแบบสุ่ม โดยยังคงอยู่ในช่วงปลอดภัย
+const id = setInterval(() => {
+  const nx = Math.round(xMin + Math.random() * Math.max(0, xMax - xMin));
+  const ny = Math.round(yMin + Math.random() * Math.max(0, yMax - yMin));
+  el.style.left = nx + 'px';
+  el.style.top  = ny + 'px';
+}, 3000 + Math.random() * 1300);
+driftTimers.push(id);
+
+
+      el.addEventListener('click', ()=> tryAnswer(el));
+    });
+  }
+
+  // ===== [LEVEL 1] วงกลม 2 ช้อยส์จากคำตอบรายข้อ =====
+function spawnTwoAnswerCircles(choices, correctIndex){
+  const order = Math.random()<0.5 ? ['left','right'] : ['right','left'];
+  const defs = [
+    { idx:0, text: choices[0], side: order[0], cls:'choiceA' },
+    { idx:1, text: choices[1], side: order[1], cls:'choiceB' },
+  ];
+  defs.forEach(def=>{
+    const el = document.createElement('div');
+    el.className = `option circle in-anim ${def.cls}`;  // << ใช้คลาส ไม่ใช้ style.border
+    el.dataset.side = def.side;
+    el.dataset.correct = String(def.idx === correctIndex);
+    const label = document.createElement('div');
+    label.className = 'label';
+    label.textContent = def.text;
+    el.appendChild(label);
+    game.appendChild(el);
+
+    // ===== โค้ดคำนวณตำแหน่ง/การเคลื่อนที่ (เหมือนเดิม) =====
+    const SAFE_PAD = 12;
+    const prevTransform = el.style.transform;
+    el.style.transform = 'none';
+    const cs = getComputedStyle(el);
+    const core = parseFloat(cs.getPropertyValue('--c-sz')) || parseFloat(cs.width) || 180;
+    const border = (parseFloat(cs.borderLeftWidth)||0)+(parseFloat(cs.borderRightWidth)||0);
+    const realSize = Math.round(core + border);
+    el.style.transform = prevTransform;
+
+    const yMin = 110;
+    const yMax = Math.max(140, innerHeight - realSize - SAFE_PAD);
+    const totalMaxX = innerWidth - realSize - SAFE_PAD;
+
+    const leftZoneStart  = SAFE_PAD;
+    const leftZoneEnd    = Math.max(SAFE_PAD, Math.min(totalMaxX, (innerWidth / 3) - SAFE_PAD));
+    const rightZoneStart = Math.max(SAFE_PAD, Math.min(totalMaxX, Math.ceil((innerWidth * 2) / 3)));
+    const rightZoneEnd   = totalMaxX;
+
+    let xMin, xMax;
+    if (def.side === 'left'){ xMin = leftZoneStart; xMax = leftZoneEnd - realSize; }
+    else { xMin = rightZoneStart; xMax = rightZoneEnd; }
+    if (!isFinite(xMin) || !isFinite(xMax) || xMin > xMax){ xMin = SAFE_PAD; xMax = totalMaxX; }
+
+    const nx0 = Math.round(xMin + Math.random() * Math.max(0, xMax - xMin));
+    const ny0 = Math.round(yMin + Math.random() * Math.max(0, yMax - yMin));
+    el.style.left = nx0 + 'px';
+    el.style.top  = ny0 + 'px';
+
+    // ยกเลิกการขยับเป็นระยะ เพื่อให้ตำแหน่งนิ่ง
+    // (ลบทิ้งทั้งบล็อก setInterval เดิม)
+
+    el.addEventListener('click', ()=> tryAnswer(el));
+  });
+}
+
+
+function tryAnswer(el){
+    if (ended) return;   // ❗ จบเกมแล้ว ห้ามกดตอบ
+  if(!awaitingAnswer) return;
+const ok = (el.dataset.correct === 'true');
+awaitingAnswer = false;
+
+// 🔸 ให้ "ทั้งสองตัวเลือก" fade หายพร้อมกัน
+document.querySelectorAll('.option').forEach(btn=>{
+// 🔊 เล่นเสียงตามผลลัพธ์ ตอน "เลือกคำตอบ"
+try{
+  if (ok) {
+    playSfx(hitSound, VOL_HIT);        // ถูก → ใช้เสียงเดิม (hitSound)
+  } else {
+    playSfx(wrongSound, VOL_WRONG);     // ผิด → เล่น image/wrong.mp3
+  }
+}catch(_){}
+
+  btn.classList.add('fade-out');
+  btn.addEventListener('animationend', ()=> btn.remove(), {once:true});
+});
+
+// (ไม่ต้องรอเฉพาะปุ่มที่ถูกเลือกแล้วค่อยลบอีกที)
+
+
+  // ===== NEW: สไลด์ qBox + qImg ออกไปทิศทางที่เลือก แล้ว "รอ" ให้จบก่อน =====
+  const side = el.dataset.side || ((el.getBoundingClientRect().left < innerWidth/2) ? 'left' : 'right');
+
+  // รีเซ็ตสถานะเข้า แล้วสั่งออก
+  qBox.classList.remove('in-pre','in-go','out-left','out-right');
+  qImg.classList.remove('in-pre','in-go','out-left','out-right');
+  qBox.classList.add('fx', side==='left' ? 'out-left' : 'out-right');
+  qImg.classList.add('fx', side==='left' ? 'out-left' : 'out-right');
+
+  // รอ transition ของทั้ง qBox และ qImg (มี timeout กันพลาด)
+  waitForBothTransitions([qBox, qImg], 600).then(()=>{
+    // จบเอฟเฟกต์แล้ว ค่อยไปสรุปผลรอบ
+    endRound(ok, el, false);
+  });
+
+  // (ตัด selectSound ออก — ตอนนี้เราเล่นถูก/ผิดไปแล้วด้านบน)
+}
+
+/* Helper: รอจนกว่าทุก element จะยิง 'transitionend' อย่างน้อย 1 ครั้ง หรือครบ timeout (ms) */
+function waitForBothTransitions(els, timeoutMs=600){
+  const once = (node, type) => new Promise(res=>{
+    let done=false;
+    const h = ()=>{ if(!done){ done=true; node.removeEventListener(type,h); res(); } };
+    node.addEventListener(type, h, {once:true});
+    // กันกรณีไม่มี transition หรือคลาสซ้ำเดิม
+    setTimeout(h, timeoutMs);
+  });
+  return Promise.all( (els||[]).map(n=> once(n,'transitionend')) );
+}
+
+
+function endRound(ok, pickedElOrNull, timeout=false){
+  clearInterval(roundTimer); stopTimebar();
+  // (ไม่ต้องเล่น hitSound ที่นี่แล้ว — เราเล่นไปตอนคลิกเลือกแล้ว)
+
+
+  // อัปเดตคะแนนก่อน แล้วทำเอฟเฟกต์ตัวเลขลอย
+if (ok) {
+  score += 2;     // ตอบถูก +1
+} else {
+  score -= 2;     // ตอบผิด -1
+}
+updateHUD();
+flyScoreForEl(pickedElOrNull || null, ok); // แสดง +1/-1 ตรงกลางจอเหมือนเดิม
+
+// เก็บ timeout id ไว้เพื่อจะได้เคลียร์ตอนออกเกม
+afterRoundTimeoutId = setTimeout(()=>{
+  // ออกจากเกม/กดเมนูไปแล้ว ไม่ต้องสร้างอีโมจิ
+  if (ended || !document.body.classList.contains('in-game')) return;
+
+  // เก็บกวาดรอบเดิม
+  const hide = (el)=>{ if(!el) return; el.style.transition='none'; el.style.opacity='0'; el.style.pointerEvents='none'; };
+  hide(qBox);
+  document.querySelectorAll('.option').forEach(hide);
+  timebarWrap.style.opacity='0';
+
+  // เคลียร์ของเก่า (แต่ "ยังไม่" ไปรอบถัดไป)
+  clearRoundObjects(); 
+  qBox.textContent=''; 
+  qBox.style.opacity='1'; 
+  timebarWrap.style.opacity='1';
+
+  round++; updateHUD();
+  if(qImg){ qImg.style.display='none'; qImg.removeAttribute('src'); }
+
+  // ★ แทนที่จะ nextRound() เลย → เปิด “เกท” รอผู้เล่นกดอีโมจิ
+  spawnContinueEmojis(1);   // ปรับจำนวนได้
+}, 600);
+
+
+}
+
+
+ /* ---------ผูกรูปภาพ--------- */
+const FIXED_IMG_MAP = {};
+
+/* ===== [LEVEL 1] คลังคำถามแบบ “สิ่งมีชีวิตต้องการอะไร?” 2 ช้อยส์ =====
+   ใส่ได้กี่ข้อก็ได้ รูปจะอ้างจาก FIXED_IMG_MAP ตามชื่อ prompt
+   choices: [ตัวเลือกซ้าย, ตัวเลือกขวา], correct: index ที่ถูก (0 หรือ 1)
+*/
+const NEEDS_BANK = [
+  { prompt:'sandwich',       imgKey:'word1',  voiceRel: 1  },
+  { prompt:'french fries',   imgKey:'word2',  voiceRel: 2  },
+  { prompt:'burger',               imgKey:'word3',  voiceRel: 3  },
+  { prompt:'salad',                 imgKey:'word4',  voiceRel: 4  },
+  { prompt:'rice',         imgKey:'word5',  voiceRel: 5  },
+  { prompt:'fried egg',          imgKey:'word6',  voiceRel: 6  },
+  { prompt:'sausage',         imgKey:'word7',  voiceRel: 7  },
+  { prompt:'omelet',            imgKey:'word8',  voiceRel: 8  },
+  { prompt:'bread',         imgKey:'word9',  voiceRel: 9  },
+  { prompt:'bacon',                   imgKey:'word10', voiceRel: 10 },
+  { prompt:'fried chicken',       imgKey:'word11', voiceRel: 11 },
+  { prompt:'fish',           imgKey:'word12', voiceRel: 12 },
+  { prompt:'noodles',          imgKey:'word13', voiceRel: 13 },
+  { prompt:'pizza',       imgKey:'word14', voiceRel: 14 },
+  { prompt:'spaghetti',           imgKey:'word15', voiceRel: 15 },
+  { prompt:'beef',            imgKey:'word16', voiceRel: 16 },
+  { prompt:'pork',          imgKey:'word17', voiceRel: 17 },
+  { prompt:'crisps',            imgKey:'word18', voiceRel: 18 },
+  { prompt:'cookie',       imgKey:'word19', voiceRel: 19 },
+  { prompt:'pancake',             imgKey:'word20', voiceRel: 20 },
+  { prompt:'milk',        imgKey:'word21', voiceRel: 21 },
+  { prompt:'yogurt',         imgKey:'word22', voiceRel: 22 },
+  { prompt:'water',           imgKey:'word23', voiceRel: 23 },
+  { prompt:'popcorn',         imgKey:'word24', voiceRel: 24 },
+  { prompt:'butter',          imgKey:'word25', voiceRel: 25 },
+  { prompt:'ice cream',            imgKey:'word26', voiceRel: 26 },
+  { prompt:'cake',            imgKey:'word27', voiceRel: 27 },
+  { prompt:'chocolate',           imgKey:'word28', voiceRel: 28 },
+  { prompt:'juice',           imgKey:'word29', voiceRel: 29 },
+  { prompt:'candy',           imgKey:'word30', voiceRel: 30 },
+  { prompt:'ketchup',           imgKey:'word31', voiceRel: 31 },
+  { prompt:'soup',           imgKey:'word32', voiceRel: 32 },
+  { prompt:'papaya salad',           imgKey:'word33', voiceRel: 33 },
+  { prompt:'donut',           imgKey:'word34', voiceRel: 34 },
+  { prompt:'flour',           imgKey:'word35', voiceRel: 35 },
+  { prompt:'sugar',           imgKey:'word36', voiceRel: 36 },
+  { prompt:'salt',           imgKey:'word37', voiceRel: 37 },
+];
+
+const LEVEL1_BANK = [
+  { prompt:'stomach ache',      imgKey:'word1',  voiceRel: 1  },
+  { prompt:'toothache',       imgKey:'word2',  voiceRel: 2  },
+  { prompt:'sore throat',       imgKey:'word3',  voiceRel: 3  },
+  { prompt:'headache',     imgKey:'word4',  voiceRel: 4  },
+  { prompt:'fever',            imgKey:'word5',  voiceRel: 5  },
+  { prompt:'cough',            imgKey:'word6',  voiceRel: 6  },
+  { prompt:'rash',         imgKey:'word7',  voiceRel: 7  },
+  { prompt:'broken arm',  imgKey:'word8',  voiceRel: 8  },
+  { prompt:'broken leg',  imgKey:'word9',  voiceRel: 9  },
+  { prompt:'diarrhea',      imgKey:'word10', voiceRel: 10 },
+  { prompt:'vomit',       imgKey:'word11', voiceRel: 11 },
+  { prompt:'cut',            imgKey:'word12', voiceRel: 12 },
+  { prompt:'bruised',     imgKey:'word13', voiceRel: 13 },
+  { prompt:'runny nose',  imgKey:'word14', voiceRel: 14 },
+  { prompt:'cold',        imgKey:'word15', voiceRel: 15 },
+];
+
+const LEVEL2_BANK = [
+  { prompt:'sandwich',       imgKey:'word1',  voiceRel: 1  },
+  { prompt:'french fries',   imgKey:'word2',  voiceRel: 2  },
+  { prompt:'burger',               imgKey:'word3',  voiceRel: 3  },
+  { prompt:'salad',                 imgKey:'word4',  voiceRel: 4  },
+  { prompt:'rice',         imgKey:'word5',  voiceRel: 5  },
+  { prompt:'fried egg',          imgKey:'word6',  voiceRel: 6  },
+  { prompt:'sausage',         imgKey:'word7',  voiceRel: 7  },
+  { prompt:'omelet',            imgKey:'word8',  voiceRel: 8  },
+  { prompt:'bread',         imgKey:'word9',  voiceRel: 9  },
+  { prompt:'bacon',                   imgKey:'word10', voiceRel: 10 },
+  { prompt:'fried chicken',       imgKey:'word11', voiceRel: 11 },
+  { prompt:'fish',           imgKey:'word12', voiceRel: 12 },
+  { prompt:'noodles',          imgKey:'word13', voiceRel: 13 },
+  { prompt:'pizza',       imgKey:'word14', voiceRel: 14 },
+  { prompt:'spaghetti',           imgKey:'word15', voiceRel: 15 },
+  { prompt:'beef',            imgKey:'word16', voiceRel: 16 },
+  { prompt:'pork',          imgKey:'word17', voiceRel: 17 },
+  { prompt:'crisps',            imgKey:'word18', voiceRel: 18 },
+  { prompt:'cookie',       imgKey:'word19', voiceRel: 19 },
+  { prompt:'pancake',             imgKey:'word20', voiceRel: 20 },
+  { prompt:'milk',        imgKey:'word21', voiceRel: 21 },
+  { prompt:'yogurt',         imgKey:'word22', voiceRel: 22 },
+  { prompt:'water',           imgKey:'word23', voiceRel: 23 },
+  { prompt:'popcorn',         imgKey:'word24', voiceRel: 24 },
+  { prompt:'butter',          imgKey:'word25', voiceRel: 25 },
+  { prompt:'ice cream',            imgKey:'word26', voiceRel: 26 },
+  { prompt:'cake',            imgKey:'word27', voiceRel: 27 },
+  { prompt:'chocolate',           imgKey:'word28', voiceRel: 28 },
+  { prompt:'juice',           imgKey:'word29', voiceRel: 29 },
+  { prompt:'candy',           imgKey:'word30', voiceRel: 30 },
+  { prompt:'ketchup',           imgKey:'word31', voiceRel: 31 },
+  { prompt:'soup',           imgKey:'word32', voiceRel: 32 },
+  { prompt:'papaya salad',           imgKey:'word33', voiceRel: 33 },
+  { prompt:'donut',           imgKey:'word34', voiceRel: 34 },
+  { prompt:'flour',           imgKey:'word35', voiceRel: 35 },
+  { prompt:'sugar',           imgKey:'word36', voiceRel: 36 },
+  { prompt:'salt',           imgKey:'word37', voiceRel: 37 },
+];
+
+const LEVEL3_BANK = [
+  { prompt:'bank',        imgKey:'word1',  voiceRel: 1  },
+  { prompt:'school',        imgKey:'word2',  voiceRel: 2  },
+  { prompt:'police station',       imgKey:'word3',  voiceRel: 3  },
+  { prompt:'gas station',       imgKey:'word4', voiceRel: 4  },
+  { prompt:'church',     imgKey:'word5',  voiceRel: 5  },
+  { prompt:'hospital',   imgKey:'word6',  voiceRel: 6  },
+  { prompt:'forest',      imgKey:'word7',  voiceRel: 7  },
+  { prompt:'coffee shop',       imgKey:'word8',  voiceRel: 8  },
+  { prompt:'market',       imgKey:'word9',  voiceRel: 9  },
+  { prompt:'shopping mall',     imgKey:'word10', voiceRel: 10 },
+  { prompt:'cinema',        imgKey:'word11', voiceRel: 11 },
+  { prompt:'sea',        imgKey:'word12', voiceRel: 12 },
+  { prompt:'beach',      imgKey:'word13', voiceRel: 13 },
+  { prompt:'museum',       imgKey:'word14', voiceRel: 14 },
+  { prompt:'zoo',      imgKey:'word15', voiceRel: 15 },
+  { prompt:'river',          imgKey:'word16', voiceRel: 16 },
+  { prompt:'desert',       imgKey:'word17', voiceRel: 17 },
+  { prompt:'park',       imgKey:'word18', voiceRel: 18 },
+  { prompt:'fire station',      imgKey:'word19', voiceRel: 19 },
+  { prompt:'temple',     imgKey:'word20', voiceRel: 20 },
+  { prompt:'theme park',          imgKey:'word21', voiceRel: 21 },
+  { prompt:'library',    imgKey:'word22', voiceRel: 22 },
+  { prompt:'hotel',      imgKey:'word23', voiceRel: 23 },
+  { prompt:'restaurant',   imgKey:'word24', voiceRel: 24 },
+  { prompt:'train station',    imgKey:'word25', voiceRel: 25 },
+  { prompt:'airport',        imgKey:'word26', voiceRel: 26 },
+  { prompt:'stadium',        imgKey:'word27', voiceRel: 27 },
+  { prompt:'mountain',        imgKey:'word28', voiceRel: 28 },
+  { prompt:'volcano',       imgKey:'word29', voiceRel: 29 },
+  { prompt:'aquarium',  imgKey:'word30', voiceRel: 30 },
+  { prompt:'house',      imgKey:'word31', voiceRel: 31 },
+  { prompt:'factory',         imgKey:'word32', voiceRel: 32 },
+  { prompt:'waterfall',        imgKey:'word33', voiceRel: 33 },
+  { prompt:'castle',    imgKey:'word34', voiceRel: 34 },
+  { prompt:'city',  imgKey:'word35', voiceRel: 35 },
+  { prompt:'village',  imgKey:'word36', voiceRel: 36 },
+];
+
+
+// หมายเหตุการใช้ BANK:
+// - raw.imgKey (แนะนำ): ให้ใส่เป็น 'word17' เพื่อผูกภาพถูกกับข้อ
+// - หรือ raw.key / raw.word ก็ได้ (โค้ดจะลองอ่านให้)
+// - ถ้าไม่ใส่อะไรเลย ระบบจะสุ่ม 'wordN' ให้รอบนั้น
+
+
+(function attachLevel1Images(){
+  for (const q of LEVEL1_BANK){
+    const img = FIXED_IMG_MAP[q.prompt];
+    if (img) q.img = img;
+  }
+})();
+
+(function attachLevel3Images(){
+  for (const q of LEVEL3_BANK){
+    const img = FIXED_IMG_MAP[q.prompt];
+    if (img) q.img = img;
+  }
+})();
+
+// ผูกรูปภาพอัตโนมัติให้ NEEDS_BANK (ถ้ามีใน FIXED_IMG_MAP)
+(function attachNeedsImages(){
+  for (const q of NEEDS_BANK){
+    const img = FIXED_IMG_MAP[q.prompt];
+    if (img) q.img = img;
+  }
+})();
+
+
+let __orderL1=[], __idxL1=0; // ด่าน 1 : LEVEL1_BANK
+let __orderL2=[], __idxL2=0; // ด่าน 2 : NEEDS_BANK
+let __orderL3=[], __idxL3=0; // ด่าน 3 : LEVEL3_BANK
+
+function drawQuestion(){
+  if (window.currentLevel === 1){
+    if(!__orderL1.length || __idxL1>=__orderL1.length){
+      __orderL1 = shuffle([...Array(LEVEL1_BANK.length).keys()]);
+      __idxL1 = 0;
+    }
+const raw = LEVEL1_BANK[__orderL1[__idxL1++]] || {};
+const imgKey = raw.imgKey || raw.key || raw.word || null;
+// ส่งต่อฟิลด์ manual ถ้ามี
+const voiceRel = raw.voiceRel;   // 1..50 ของ "ด่านนั้น"
+const voiceAbs = raw.voiceAbs;   // 1..150 ข้ามด่าน
+return {
+  mode:1,
+  question: raw.prompt || '',
+  img: raw.img,
+  choices: raw.choices,
+  correctIndex: raw.correct,
+  imgKey,
+  voiceRel,
+  voiceAbs
+};
+
+
+  } else if (window.currentLevel === 2){
+    if(!__orderL2.length || __idxL2>=__orderL2.length){
+      __orderL2 = shuffle([...Array(NEEDS_BANK.length).keys()]);
+      __idxL2 = 0;
+    }
+    const raw = NEEDS_BANK[__orderL2[__idxL2++]] || {};
+    const imgKey = raw.imgKey || raw.key || raw.word || null;
+    return { mode:1, question: raw.prompt || '', img: raw.img, choices: raw.choices, correctIndex: raw.correct, imgKey };
+
+  } else if (window.currentLevel === 3){
+    if(!__orderL3.length || __idxL3>=__orderL3.length){
+      __orderL3 = shuffle([...Array(LEVEL3_BANK.length).keys()]);
+      __idxL3 = 0;
+    }
+    const raw = LEVEL3_BANK[__orderL3[__idxL3++]] || {};
+    const imgKey = raw.imgKey || raw.key || raw.word || null;
+    return { mode:1, question: raw.prompt || '', img: raw.img, choices: raw.choices, correctIndex: raw.correct, imgKey };
+  }
+}
+
+
+function nextRound(){
+    if (ended) return;   // ❗ ถ้าจบเกมแล้ว ไม่ต้องสร้างรอบใหม่
+  clearRoundObjects(); awaitingAnswer=false; stopTimebar();
+  qBox.textContent='';
+
+  setTimeout(()=>{
+    const q = drawQuestion();
+    dropQuestion(q.question, q.img);
+// 🔊 เลือกเสียงแบบฉลาด: manual มาก่อน (voiceAbs/voiceRel) แล้วค่อย fallback จาก wordN
+playQuestionVoiceSmart(window.currentLevel, q);
+// ถ้าอยากหน่วงให้รูป/ข้อความขึ้นก่อน: setTimeout(()=>playQuestionVoiceSmart(window.currentLevel, q), 250);
+
+
+
+    setTimeout(()=>{
+      // ด่าน 1–3 = ระบบรูปภาพซ้าย-ขวา, ด่านอื่นยังใช้ระบบเดิม
+      if ([1,2,3].includes(window.currentLevel)){
+        spawnTwoImageOptions(q, window.currentLevel);   // ← ใช้พูล data1/data2/data3
+      } else if (q.mode === 0){
+        spawnTwoCircles(q.correctTag);
+      } else {
+        spawnTwoAnswerCircles(q.choices, q.correctIndex);
+      }
+      awaitingAnswer = true;
+    }, OPT_IN_MS);
+
+
+  }, Q_DROP_MS + Q_HOLD_MS);
+}
+
+function startRoundTimer(){
+  // ไม่ใช้ตัวจับเวลาอีกต่อไป — แค่เปิดให้ตอบได้
+  awaitingAnswer = true;
+}
+
+  function startGame(){
+  ensurePreloadForLevel(window.currentLevel);
+  if (!IMAGES_READY){
+    const st = document.getElementById('startTitle');
+    if (st) st.textContent = `กำลังเตรียมภาพ ${__preloadDone}/${__preloadTotal} ...`;
+    // เช็คซ้ำจนกว่าจะพร้อม แล้วค่อยเริ่ม
+    const waitId = setInterval(()=>{
+      if (IMAGES_READY){
+        clearInterval(waitId);
+        startGame(); // เรียกตัวเองอีกครั้งเมื่อพร้อม
+      }
+    }, 120);
+    return; 
+  }
+
+    document.body.classList.remove('prestart');
+    document.body.classList.add('in-game');   
+    running=true; ended=false; paused=false;
+        window.ended = ended; 
+    overlay.style.visibility='hidden'; overlay.style.opacity='0';
+    score=0; round=0; updateHUD();
+        startGameTimer(); 
+    nextRound();
+  }
+
+  // ======== จบด่าน (แก้ใหม่: หยุดสนามเกมทั้งหมดเมื่อสรุปคะแนน) ========
+  function endLevel(){
+        clearCountdown();
+    ended = true;
+        window.ended = ended; // ✅ อัปเดตค่า global
+    running = false;
+    clearGameTimer();
+    stopClockUI();
+
+    // 🔒 หยุดและซ่อนสนามเกมทั้งหมด
+    awaitingAnswer = false;
+    stopTimebar();
+    clearRoundObjects();               
+    qBox.textContent = '';             
+    cancelPostRoundPhase(); // ยกเลิก timeout + ลบ tap-target ที่อาจสร้างไว้
+    document.querySelectorAll('.tap-target, .fly-emoji, .option').forEach(n=> n.remove());
+    qBox.style.display = 'none';     
+    if (qImg){
+      qImg.style.display = 'none';     
+      qImg.removeAttribute('src');
+    }
+    game.style.visibility = 'hidden';    // ซ่อนสนามเกมทั้งหมด (ไม่ให้รันต่อ)
+
+    // อัปเดตคะแนน
+    finalScoreEl.textContent = String(score);
+
+    // ★ ใส่อีโมจิตามช่วงคะแนน
+    const badgeEl = document.getElementById('scoreBadge');
+    badgeEl.textContent = getBadgeEmoji(score);
+
+    bgm?.pause?.();
+    winSound?.play?.().catch(()=>{});
+
+    overlay.style.visibility = 'visible';
+    overlay.style.opacity    = '1';
+  }
+
+
+  function getBadgeEmoji(sc){
+    if (sc <= 5)  return '❤️';    // 0–5
+    if (sc <= 10) return '🥇';    // 6–10
+    if (sc <= 15) return '🏆';    // 11–15
+    return '🏆';
+  }
+
+
+function pauseGame(){
+  if(!running||paused) return;
+  paused = true;
+  clearInterval(roundTimer);
+  document.querySelectorAll('.option').forEach(n=> n.style.pointerEvents='none');
+  pauseGameTimer();
+}
+
+  function resumeGame(){ if(!paused||ended)return; paused=false; 
+        document.querySelectorAll('.option').forEach(n=> n.style.pointerEvents='auto'); 
+    bgm?.play?.().catch(()=>{}); 
+
+        resumeGameTimer(); 
+}
+  document.getElementById('pauseBtn')?.addEventListener('click', ()=>{ if(!paused){ pauseGame(); document.getElementById('pauseBtn').textContent='▶️ ต่อ'; } else { resumeGame(); document.getElementById('pauseBtn').textContent='⏸ หยุด'; } });
+  
+
+document.getElementById('quickRestart')?.addEventListener('click', ()=>{
+  // ✅ เคลียร์ทุกอย่างแบบทันที (กันปุ่มค้าง)
+  hardCleanupNow({ stopBgm: true });
+
+  // UI กลับเมนู
+  overlay.style.visibility='hidden';
+  overlay.style.opacity='0';
+  document.getElementById('startScreen').style.display = 'none';
+  document.getElementById('landing').classList.remove('hide');
+
+  // ถ้าต้องการให้เพลงเมนูเล่นต่อ
+  try{
+    bgm.currentTime = 0;
+    bgm.play().catch(()=>{});
+  }catch(_){}
+});
+
+
+
+
+  restartBtn.addEventListener('click', ()=>{
+       cancelPostRoundPhase();
+    restorePlayfield();   
+    overlay.style.visibility='hidden';
+    overlay.style.opacity='0';
+    resetState();
+    bgm.currentTime = 0;
+        ensurePreloadForLevel(window.currentLevel);   // << เติมให้ชัวร์
+    bgm.play().catch(()=>{});
+    startGame();
+  });
+
+
+selectLevelBtn.addEventListener('click', ()=>{
+  // ✅ เคลียร์จอ/ปุ่ม/เสียงทั้งหมดก่อนกลับเมนู
+  hardCleanupNow({ stopBgm: true });
+
+  ensurePreloadForLevel(window.currentLevel);   // เติมของด่านล่าสุดไว้ก่อน
+  document.getElementById('landing').classList.remove('hide');
+  document.getElementById('startScreen').style.display='none';
+  overlay.style.visibility='hidden';
+  overlay.style.opacity='0';
+
+  // เพลงเมนู
+  try{
+    bgm.currentTime = 0;
+    bgm.play().catch(()=>{});
+  }catch(_){}
+});
+
+
+
+  // start screen
+  const startScreen  = document.getElementById('startScreen');
+  const startBtn     = document.getElementById('startBtn');
+  const countdownEl  = document.getElementById('countdown');
+
+let countdownItv = null;
+function clearCountdown(){
+  if (countdownItv){
+    clearInterval(countdownItv);
+    countdownItv = null;
+  }
+  countdownEl.style.display = 'none';
+  countdownEl.textContent = '3';
+  startBtn.style.display = 'inline-block';
+  startBtn.disabled = false;
+  startBtn.style.pointerEvents = 'auto';
+}
+
+
+  function openStart(autoCountdown=true){
+  clearCountdown();
+    document.body.classList.add('prestart');  
+    startScreen.style.display='flex';
+  
+if (autoCountdown) {
+  let n = 3;
+  countdownEl.textContent = n;
+  countdownEl.style.display = 'block';
+
+  countdownItv = setInterval(() => {
+    n--;
+    if (n > 0) {
+      countdownEl.textContent = n;
+    } else {
+      clearInterval(countdownItv);
+      countdownItv = null;
+      startScreen.style.display = 'none';
+      startGame();
+    }
+  }, 1000);
+}
+
+    else {
+      startBtn.disabled=false; startBtn.style.pointerEvents='auto';
+      startBtn.style.display='inline-block'; countdownEl.style.display='none';
+    }
+  }
+  startBtn?.addEventListener('click', ()=>{
+      clearCountdown(); 
+    if(startBtn.disabled) return;
+    startBtn.disabled=true; startBtn.style.pointerEvents='none';
+    startBtn.style.display='none';
+    
+let n = 3;
+countdownEl.textContent = n;
+countdownEl.style.display = 'block';
+
+countdownItv = setInterval(() => {
+  n--;
+  if (n > 0) {
+    countdownEl.textContent = n;
+  } else {
+    clearInterval(countdownItv);
+    countdownItv = null;
+    startScreen.style.display = 'none';
+    startGame();
+    startBtn.disabled = false;
+    startBtn.style.pointerEvents = 'auto';
+  }
+}, 1000);
+
+  });
+
+
+  document.getElementById('guideBtn')?.addEventListener('click', ()=>{ document.getElementById('landing').classList.add('hide'); document.getElementById('guideScreen').style.display='flex' });
+  document.getElementById('guideBack')?.addEventListener('click', ()=>{ document.getElementById('guideScreen').style.display='none'; document.getElementById('landing').classList.remove('hide') });
+
+  // visibility pause
+  let wasRunning=false;
+  function uiBlockingOpen(){
+    const landing=document.getElementById('landing');
+    const startOpen = startScreen && startScreen.style.display!=='none';
+    const guide=document.getElementById('guideScreen');
+    const guideOpen = getComputedStyle(guide).display!=='none';
+    const overlayOpen = overlay.style.visibility==='visible';
+    return overlayOpen || (!landing.classList.contains('hide')) || startOpen || guideOpen;
+  }
+  function handleHidden(){ wasRunning = running && !ended && !uiBlockingOpen(); if(wasRunning) pauseGame() }
+  function handleVisible(){ if(wasRunning && paused && !ended && !uiBlockingOpen()) resumeGame(); wasRunning=false }
+  document.addEventListener('visibilitychange', ()=>{ if(document.hidden) handleHidden(); else handleVisible() });
+  window.addEventListener('blur', handleHidden); window.addEventListener('focus', handleVisible);
+
+})();
+</script>
+
+<!-- ===== คำสั่งเสียง (ถ้าไม่มีก็ข้ามอัตโนมัติ) ===== -->
+<script>
+(function(){
+  const micBtn   = document.getElementById('micBtn'); // ไม่มีปุ่ม = ไม่ทำงาน
+  if(!micBtn) return;
+  const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+  if(!SR){ micBtn.textContent='🎤 ไม่รองรับ'; micBtn.disabled=true; return }
+  const rec = new SR(); rec.lang='th-TH'; rec.continuous=true; rec.interimResults=true;
+  function tokensFrom(s){ s=(s||'').toLowerCase().trim(); s=s.replace(/\s*(ค่ะ|ครับ|คะ|ฮะ)$/,''); return s.split(/[\s,，。\.!?:;、]+/).filter(Boolean) }
+  function currentOptionsMap(){ const map=new Map(); 
+
+document.querySelectorAll('.option').forEach(n=>{ 
+     const t=(n.textContent||'').trim().toLowerCase(); if(!map.has(t)) map.set(t,[]); map.get(t).push(n) }); return map }
+  function pickNearest(arr){ return arr[0] }
+  function tryFire(phrase){ const toks=tokensFrom(phrase); if(!toks.length) return false; const cmap=currentOptionsMap(); for(const t of toks){ if(cmap.has(t)){ const node = pickNearest(cmap.get(t)); node?.click(); return true } } return false }
+  rec.onresult=(e)=>{ for(let i=e.resultIndex;i<e.results.length;i++){ const r=e.results[i]; const txt=(r[0]?.transcript||'').trim(); if(!txt) continue; tryFire(txt) } };
+})();
+</script>
+
+<!-- ===== Pose (มือเป็นวงกลมแตะเลือกช้อยส์) ===== -->
+<script type="module">
+import {PoseLandmarker, FilesetResolver} from "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.3";
+const camBtn = document.getElementById('camBtn');
+const video  = document.getElementById('cameraMirror');
+const cvs    = document.getElementById('camCanvas');
+const ctx    = cvs.getContext('2d', { alpha: true });
+const DETECT_W = 320;
+let detectCanvas = document.createElement('canvas');
+let detectCtx = detectCanvas.getContext('2d', { alpha:false, desynchronized:true });
+let CAM_ON=false, landmarker=null, raf=0, stream=null;
+
+function fitCanvas(){ const dpr = CAM_ON? 1 : Math.max(1, window.devicePixelRatio||1); cvs.width=Math.round(innerWidth*dpr); cvs.height=Math.round(innerHeight*dpr); cvs.style.width=innerWidth+'px'; cvs.style.height=innerHeight+'px'; ctx.setTransform(1,0,0,1,0,0); ctx.scale(dpr,dpr) }
+fitCanvas(); addEventListener('resize', fitCanvas);
+function coverCropRect(){ const vw=video.videoWidth||640, vh=video.videoHeight||480; const sw=innerWidth, sh=innerHeight; const scale=Math.max(sw/vw, sh/vh); const sW=Math.round(sw/scale), sH=Math.round(sh/scale); const sX=Math.round((vw-sW)/2), sY=Math.round((vh-sH)/2); return {sX,sY,sW,sH,vw,vh,sw,sh} }
+function mapToScreen(nx,ny){ const {sX,sY,sW,sH,vw,vh,sw,sh} = coverCropRect(); const px=nx*vw, py=ny*vh; const u=(px-sX)/sW, v=(py-sY)/sH; let x=u*sw, y=v*sh; x=sw-x; return {x,y} }
+
+ 	const SHOW_HAND_BALL=false; 
+ 	const lastHitAt=new WeakMap(); 
+ 	const HIT_LOCK_MS=160;
+function circleIntersectsRect(cx,cy,r, rc){ 
+ 	const nx=Math.max(rc.left, 
+ 	Math.min(cx, rc.right)); 
+ 	const ny=Math.max(rc.top, 
+ 	Math.min(cy, rc.bottom)); 
+ 	const dx=cx-nx, dy=cy-ny;    	
+ 	return (dx*dx+dy*dy)<=r*r 
+}
+
+function hitByCircle(center, r){
+  if (window.ended) return;   
+  const opts = [...document.querySelectorAll('.option, .tap-target')];
+
+
+  for (const n of opts){
+    const rc = n.getBoundingClientRect();
+    if (circleIntersectsRect(center.x, center.y, r, rc)){
+      const t = performance.now();
+      const last = lastHitAt.get(n) || 0;
+      if (t - last < HIT_LOCK_MS) continue;
+      lastHitAt.set(n, t);
+      n.click();
+    }
+  }
+}
+
+
+async function ensureLandmarker(){ if(landmarker) return landmarker; const fileset = await FilesetResolver.forVisionTasks("https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.3/wasm"); landmarker = await PoseLandmarker.createFromOptions(fileset, { baseOptions:{ modelAssetPath:"https://storage.googleapis.com/mediapipe-models/pose_landmarker/pose_landmarker_lite/float16/1/pose_landmarker_lite.task" }, runningMode:'VIDEO', numPoses:1, minPoseDetectionConfidence:.35, minPosePresenceConfidence:.35, minTrackingConfidence:.35 }); return landmarker }
+function drawHandBall(elbowIdx, wristIdx, lm){ if(!lm[elbowIdx]||!lm[wristIdx]) return null; const elbow = mapToScreen(lm[elbowIdx].x, lm[elbowIdx].y); const wrist = mapToScreen(lm[wristIdx].x, lm[wristIdx].y); const r=24; const L=Math.max(1, Math.hypot(wrist.x-elbow.x, wrist.y-elbow.y)); const ux=(wrist.x-elbow.x)/L, uy=(wrist.y-elbow.y)/L; const HAND_PUSH=1.5, PUSH_PX=6; const center={ x: wrist.x + ux*(r*HAND_PUSH+PUSH_PX), y: wrist.y + uy*(r*HAND_PUSH+PUSH_PX) }; if(SHOW_HAND_BALL){ ctx.beginPath(); ctx.arc(center.x,center.y,r,0,Math.PI*2); ctx.fillStyle='#fff'; ctx.fill(); ctx.lineWidth=3; ctx.strokeStyle='#fff'; ctx.stroke(); } hitByCircle(center, r*.95); return center }
+function drawPoseAndColliders(res){ const sw=innerWidth, sh=innerHeight; ctx.clearRect(0,0,sw,sh); if(!res?.landmarks?.length) return; const lm=res.landmarks[0]; drawHandBall(13,15,lm); drawHandBall(14,16,lm) }
+function runLoop(){ const step=()=>{ if(!video.videoWidth){ raf=requestAnimationFrame(step); return } const now=performance.now(); try{ const {sX,sY,sW,sH}=coverCropRect(); detectCtx.drawImage(video, sX,sY,sW,sH, 0,0, detectCanvas.width, detectCanvas.height); const res=landmarker.detectForVideo(detectCanvas, now); drawPoseAndColliders(res) }catch(e){} raf=requestAnimationFrame(step) }; raf=requestAnimationFrame(step) }
+async function startCamera(){ await ensureLandmarker(); 
+    stream = await navigator.mediaDevices.getUserMedia({
+  video: { width: 960, height: 540, frameRate: 30, facingMode: 'user' },
+  audio: false
+});                       
+                          
+    video.srcObject=stream; await video.play().catch(()=>{}); const vw=video.videoWidth||640, vh=video.videoHeight||480; const ratio=vw/vh; detectCanvas.width=DETECT_W; detectCanvas.height=Math.round(DETECT_W/ratio); video.style.display='block'; cvs.style.display='block'; camBtn.textContent='📷 กล้อง: เปิด'; CAM_ON=true; fitCanvas(); runLoop() }
+function stopCamera(){ cancelAnimationFrame(raf); if(stream){ stream.getTracks().forEach(t=>t.stop()); stream=null } try{ video.pause() }catch(e){} video.removeAttribute('srcObject'); video.style.display='none'; cvs.style.display='none'; ctx.clearRect(0,0,innerWidth,innerHeight); camBtn.textContent='📷 กล้อง: ปิด'; CAM_ON=false; fitCanvas() }
+camBtn.addEventListener('click', async ()=>{ if(!stream){ try{ await startCamera() }catch(err){ camBtn.textContent='📷 กล้อง: ไม่ได้รับอนุญาต'; camBtn.disabled=true } } else { stopCamera() } });
+document.addEventListener('visibilitychange', ()=>{ if(document.hidden && stream) stopCamera() });
+</script>
+
+<!-- ===== เมนู/เริ่มเกม ===== -->
+<script>
+(()=> {
+  const landing = document.getElementById('landing');
+  const startScreen = document.getElementById('startScreen');
+  const guideScreen = document.getElementById('guideScreen');
+
+  document.querySelectorAll('.levelBtn').forEach(btn=>{
+  if(btn.id==='guideBtn') return;
+  btn.addEventListener('click', ()=>{
+    const lv = Number(btn.dataset.level || 0);
+
+    window.currentLevel = lv; 
+    if (typeof ensurePreloadForLevel === 'function') {
+      ensurePreloadForLevel(lv);
+    }
+    document.body.classList.add('prestart'); 
+    landing.classList.add('hide');
+    startScreen.style.display='flex';
+
+        const startBtn    = document.getElementById('startBtn');
+        const countdownEl = document.getElementById('countdown');
+
+if (startBtn){
+  startBtn.style.display = 'inline-block';
+  startBtn.disabled = false;
+  startBtn.style.pointerEvents = 'auto';
+}
+if (countdownEl){
+  countdownEl.style.display = 'none';
+  countdownEl.textContent = '3';
+}
+
+   document.getElementById('countdown').style.display='none';
+   const st = document.getElementById('startTitle');
+
+function getMissionTitle(lv){
+  switch (lv) {
+    case 1: return 'เลือกรูปภาพให้ตรงกับคำศัพท์';
+    case 2: return 'เลือกรูปภาพให้ตรงกับคำศัพท์';
+    case 3: return 'เลือกรูปภาพให้ตรงกับคำศัพท์';
+    default: return 'เลือกรูปภาพให้ตรงกับคำศัพท์';
+  }
+}
+    st.textContent = getMissionTitle(lv);
+  });
+});
+
+  document.getElementById('guideBtn')?.addEventListener('click', ()=>{ landing.classList.add('hide'); guideScreen.style.display='flex' });
+  document.getElementById('guideBack')?.addEventListener('click', ()=>{ guideScreen.style.display='none'; landing.classList.remove('hide') });
+})();
+</script>
+</body>
+</html>
+
+
+
+
+
+
