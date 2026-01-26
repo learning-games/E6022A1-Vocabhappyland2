@@ -1441,6 +1441,11 @@ function resumeGameTimer(){
   window.ended = ended; // ✅ sync ค่าเริ่มต้นไปยัง global
   let score=0, round=0;
   let roundTimer=null, timeLeft=0, awaitingAnswer=false;
+// ✅ [เพิ่มใหม่] เก็บ timeout ของการสร้างรอบ เพื่อเคลียร์ตอนออกเมนู/เปลี่ยนด่าน
+let nextRoundTO1 = null;
+let nextRoundTO2 = null;
+let preloadWaitId = null;   // (อันนี้กัน startGame() ยิงเองตอนรอ preload)
+
 
 // === โหมดรอผู้เล่นกดยืนยัน (Tap-to-continue) ===
 let gateOpen = false;
@@ -1630,6 +1635,12 @@ function resetState(){
 
 // ✅ [เพิ่มใหม่] เคลียร์จอ+เสียงแบบทันที (กันปุ่มค้างข้ามด่าน)
 function hardCleanupNow({ stopBgm = true } = {}){
+  // ✅ สำคัญ: ล้าง countdown ที่อาจกำลังนับอยู่ (กัน startGame ยิงเองตอนกลับเมนู)
+  clearCountdown();
+  if (nextRoundTO1){ clearTimeout(nextRoundTO1); nextRoundTO1 = null; }
+  if (nextRoundTO2){ clearTimeout(nextRoundTO2); nextRoundTO2 = null; }
+  if (preloadWaitId){ clearInterval(preloadWaitId); preloadWaitId = null; }
+
   // 1) ตัดสถานะเกมทันที
   awaitingAnswer = false;
   gateOpen = false;
@@ -1637,6 +1648,7 @@ function hardCleanupNow({ stopBgm = true } = {}){
   paused = false;
   ended = true;
   window.ended = true;
+
 
   // 2) เคลียร์ timer/interval/timeout ทุกตัวที่เกี่ยวกับรอบ
   cancelPostRoundPhase();        // เคลียร์ afterRoundTimeoutId + ลบ tap-target
@@ -2254,25 +2266,30 @@ return {
   }
 }
 
-
 function nextRound(){
-    if (ended) return;   // ❗ ถ้าจบเกมแล้ว ไม่ต้องสร้างรอบใหม่
+  if (ended) return;   // ❗ ถ้าจบเกมแล้ว ไม่ต้องสร้างรอบใหม่
+
+  // ✅ สำคัญ: เคลียร์ timeout ที่ค้างจากรอบก่อน (กันคำถาม/ปุ่มค้างข้ามด่าน)
+  if (nextRoundTO1){ clearTimeout(nextRoundTO1); nextRoundTO1 = null; }
+  if (nextRoundTO2){ clearTimeout(nextRoundTO2); nextRoundTO2 = null; }
+
   clearRoundObjects(); awaitingAnswer=false; stopTimebar();
   qBox.textContent='';
 
-  setTimeout(()=>{
+  nextRoundTO1 = setTimeout(()=>{
+    if (ended) return; // ✅ ออกจากเกมแล้วอย่าทำต่อ
+
     const q = drawQuestion();
     dropQuestion(q.question, q.img);
-// 🔊 เลือกเสียงแบบฉลาด: manual มาก่อน (voiceAbs/voiceRel) แล้วค่อย fallback จาก wordN
-playQuestionVoiceSmart(window.currentLevel, q);
-// ถ้าอยากหน่วงให้รูป/ข้อความขึ้นก่อน: setTimeout(()=>playQuestionVoiceSmart(window.currentLevel, q), 250);
 
+    // 🔊 เลือกเสียงแบบฉลาด
+    playQuestionVoiceSmart(window.currentLevel, q);
 
+    nextRoundTO2 = setTimeout(()=>{
+      if (ended) return; // ✅ ออกจากเกมแล้วอย่าทำต่อ
 
-    setTimeout(()=>{
-      // ด่าน 1–3 = ระบบรูปภาพซ้าย-ขวา, ด่านอื่นยังใช้ระบบเดิม
       if ([1,2,3].includes(window.currentLevel)){
-        spawnTwoImageOptions(q, window.currentLevel);   // ← ใช้พูล data1/data2/data3
+        spawnTwoImageOptions(q, window.currentLevel);
       } else if (q.mode === 0){
         spawnTwoCircles(q.correctTag);
       } else {
@@ -2280,7 +2297,6 @@ playQuestionVoiceSmart(window.currentLevel, q);
       }
       awaitingAnswer = true;
     }, OPT_IN_MS);
-
 
   }, Q_DROP_MS + Q_HOLD_MS);
 }
@@ -2661,6 +2677,7 @@ function getMissionTitle(lv){
 </script>
 </body>
 </html>
+
 
 
 
