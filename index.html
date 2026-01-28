@@ -1053,9 +1053,24 @@ const LEVEL_POOLS = {
 // === Image preloader (โหลดครั้งเดียว เก็บแคช กันโหลดซ้ำ) ===
 const __imgUrlCache  = new Set();          // จำว่า URL ไหน “เคยโหลด” แล้ว
 const __imgElemCache = new Map();          // url -> HTMLImageElement ที่พร้อมใช้ซ้ำ
+// === Audio preloader (voice) ===
+const __audioUrlCache  = new Set();          // จำว่าโหลดแล้ว
+const __audioElemCache = new Map();          // url -> HTMLAudioElement
+
+function warmAudio(url){
+  if (__audioElemCache.has(url)) return __audioElemCache.get(url);
+
+  const a = new Audio();
+  a.preload = 'auto';
+  a.src = url;
+  a.load();                // สั่งโหลดล่วงหน้า
+  __audioUrlCache.add(url);
+  __audioElemCache.set(url, a);
+  return a;
+}
+
 
 async function warmDecode(url){
-  // คืนภาพที่ decode แล้ว (ถ้ามี)
   if (__imgElemCache.has(url)) {
     const im = __imgElemCache.get(url);
     if (im && im.complete && im.naturalWidth > 0) return im;
@@ -1094,6 +1109,21 @@ function collectLevelImageUrls(level) {
   return [...pool.values()].filter(Boolean);
 }
 
+function collectLevelVoiceUrls(level){
+  let max = 50;
+  let base = 1;
+  let folder = 'sound1';
+
+  if (level === 2){ base = 51; folder = 'sound2'; }
+  else if (level === 3){ base = 101; folder = 'sound3'; }
+
+  const urls = [];
+  for (let i=0; i<max; i++){
+    urls.push(`${folder}/voice${base + i}.mp3`);
+  }
+  return urls;
+}
+
 // === เริ่มพรีโหลดรูปครบทุกด่าน + เก็บสถานะความคืบหน้าให้ UI ใช้ ===
 let __preloadDone = 0;
 let __preloadTotal = 0;
@@ -1107,6 +1137,8 @@ function __collectAllUrls(){
   ].filter(Boolean);
 }
 
+
+
 function __renderPreloadProgress(){
   const el = document.getElementById('startTitle');
   if (!el) return;
@@ -1118,7 +1150,16 @@ function __renderPreloadProgress(){
 /** พรีโหลด “ทั้งเกม” ครั้งแรก (หรือเรียกซ้ำได้ จะโหลดเฉพาะที่ยังไม่เคย) */
 function bootPreloadAll(){
   try{
-    const ALL_URLS = __collectAllUrls().filter(u => !__imgUrlCache.has(u));
+    // === รูป ===
+    const ALL_IMG_URLS = __collectAllUrls().filter(u => !__imgUrlCache.has(u));
+
+    // === เสียง (ทุกด่าน) ===
+    const ALL_VOICE_URLS = [
+      ...collectLevelVoiceUrls(1),
+      ...collectLevelVoiceUrls(2),
+      ...collectLevelVoiceUrls(3),
+    ].filter(u => !__audioUrlCache.has(u));
+
     __preloadDone  = __imgUrlCache.size;
     __preloadTotal = __imgUrlCache.size + ALL_URLS.length;
 
@@ -1128,18 +1169,22 @@ function bootPreloadAll(){
       return;
     }
 
-    preloadImages(
-      ALL_URLS,
-      (done,total)=>{
-        __preloadDone = __imgUrlCache.size;  // นับจาก cache จริง
-        __preloadTotal = __imgUrlCache.size + (total - done);
-        __renderPreloadProgress();
-      },
-      ()=>{
-        IMAGES_READY = true;
-        __renderPreloadProgress();
-      }
-    );
+// preload รูป
+preloadImages(
+  ALL_IMG_URLS,
+  (done,total)=>{
+    __preloadDone = __imgUrlCache.size;
+    __preloadTotal = __imgUrlCache.size + (total - done);
+    __renderPreloadProgress();
+  },
+  ()=>{
+    // preload เสียงต่อทันที (ไม่บล็อก UI)
+    ALL_VOICE_URLS.forEach(warmAudio);
+
+    IMAGES_READY = true;
+    __renderPreloadProgress();
+  }
+);
     __renderPreloadProgress();
   }catch(e){
     IMAGES_READY = true;
@@ -1227,9 +1272,12 @@ function playQuestionVoiceSmart(level, qObj){
     const src = pickVoiceSrc(level, qObj);
     voiceAudio.pause();
     voiceAudio.currentTime = 0;
-    voiceAudio.src = src;
-        voiceAudio.muted = false;   
-        voiceAudio.play()?.catch(()=>{});
+const cached = __audioElemCache.get(src);
+voiceAudio.src = cached ? cached.src : src;
+voiceAudio.currentTime = 0;
+voiceAudio.muted = false;
+voiceAudio.play()?.catch(()=>{});
+
   }catch(_){}
 }
 
@@ -2677,6 +2725,7 @@ function getMissionTitle(lv){
 </script>
 </body>
 </html>
+
 
 
 
