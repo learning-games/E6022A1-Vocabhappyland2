@@ -1161,15 +1161,14 @@ function bootPreloadAll(){
     ].filter(u => !__audioUrlCache.has(u));
 
     __preloadDone  = __imgUrlCache.size;
-    __preloadTotal = __imgUrlCache.size + ALL_URLS.length;
+    __preloadTotal = __imgUrlCache.size + ALL_IMG_URLS.length;
 
-    if (!ALL_URLS.length){
+    if (!ALL_IMG_URLS.length){
       IMAGES_READY = true;
       __renderPreloadProgress();
       return;
     }
 
-// preload รูป
 preloadImages(
   ALL_IMG_URLS,
   (done,total)=>{
@@ -2725,6 +2724,7 @@ function getMissionTitle(lv){
 </script>
 </body>
 </html>
+
 
 
 
